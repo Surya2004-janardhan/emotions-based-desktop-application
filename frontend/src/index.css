@@ -1,88 +1,143 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 /* ========================================
-   CLAUDE-INSPIRED LIGHT THEME (2026)
-   Minimal, Sophisticated, Text-First
+   EMOTIONAI — WARM SCIENTIFIC AESTHETIC
+   Inspired by analog scientific instruments,
+   aged parchment + precision engineering.
    ======================================== */
 
-/* Using Georgia/Charter fallback for serif */
-
 @theme {
-  --color-bg-main: #fbfaf8;
-  --color-bg-sidebar: #f5f2ed;
-  --color-bg-clay: #efebe4;
+  --color-bg-main: #F8F3E1;
+  --color-bg-sidebar: #E3DBBB;
+  --color-bg-clay: #AEB784;
+  --color-bg-white: #FEFCF9;
   
-  --color-text-main: #111827;
-  --color-text-secondary: #374151;
-  --color-text-muted: #6b7280;
+  --color-text-main: #41431B;
+  --color-text-secondary: rgb(65, 67, 27);
+  --color-text-muted: #41431B99;
   
-  --color-border-subtle: #e5e7eb;
-  --color-border-strong: #d1d5db;
+  --color-border-subtle: #AEB78466;
+  --color-border-strong: #AEB784;
   
-  --color-accent-orange: #d97706;
-  --color-accent-teal: #059669;
+  --color-accent-orange: #c2622a;
+  --color-accent-teal: #41431B;
+  --color-accent-red: #c23a2a;
+  --color-accent-gold: #AEB784;
 }
 
 /* ========================================
-   BASE STYLES
+   RESET & BASE
    ======================================== */
 
-* {
-  margin: 0;
-  padding: 0;
+*, *::before, *::after {
   box-sizing: border-box;
 }
 
+:root {
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: 'DM Sans', -apple-system, sans-serif;
+  --font-mono: 'DM Mono', 'Courier New', monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: var(--font-body);
   background-color: var(--color-bg-main);
   color: var(--color-text-main);
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ========================================
+   NOISE TEXTURE OVERLAY
+   ======================================== */
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.022;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
 }
 
 /* ========================================
    TYPOGRAPHY
    ======================================== */
 
-h1, h2, h3, h4 {
-  font-family: 'Inter', sans-serif;
-  letter-spacing: -0.02em;
-  font-weight: 700;
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
   color: var(--color-text-main);
+  line-height: 1.2;
 }
 
 .font-serif-luxe {
-  font-family: 'Charter', 'Georgia', serif;
+  font-family: var(--font-display);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
 }
 
 /* ========================================
    LAYOUT CONTAINERS
    ======================================== */
 
+.bento-container {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 1.75rem 2rem;
+}
+
+/* ========================================
+   GALLERY CARDS — Core UI blocks
+   ======================================== */
+
 .gallery-card {
-  background: white;
+  background: var(--color-bg-white);
   border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  transition: all 0.2s ease;
+  border-radius: 18px;
+  padding: 2rem;
+  box-shadow: 
+    0 1px 2px rgba(26, 22, 18, 0.04),
+    0 4px 16px rgba(26, 22, 18, 0.04),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  transition: 
+    box-shadow 0.3s ease,
+    border-color 0.3s ease,
+    transform 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+  pointer-events: none;
 }
 
 .gallery-card:hover {
   border-color: var(--color-border-strong);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.bento-container {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 1.5rem;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem;
+  box-shadow: 
+    0 2px 4px rgba(26, 22, 18, 0.06),
+    0 8px 32px rgba(26, 22, 18, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+  transform: translateY(-1px);
 }
 
 /* ========================================
@@ -91,78 +146,437 @@ h1, h2, h3, h4 {
 
 .btn-nordic {
   position: relative;
-  background: white;
-  color: var(--color-text-main);
-  padding: 0.75rem 1.25rem;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.875rem;
+  background: var(--color-text-main);
+  color: var(--color-bg-white);
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
-  border: 1px solid var(--color-border-strong);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1.5px solid var(--color-text-main);
   cursor: pointer;
+  overflow: hidden;
+}
+
+.btn-nordic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .btn-nordic:hover:not(:disabled) {
-  background: var(--color-bg-sidebar);
-  border-color: #999;
+  background: var(--color-text-secondary);
+  border-color: var(--color-text-secondary);
+  box-shadow: 0 4px 16px rgba(26, 22, 18, 0.2);
+  transform: translateY(-1px);
+}
+
+.btn-nordic:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-nordic:disabled {
-  opacity: 0.5;
+  opacity: 0.38;
   cursor: not-allowed;
 }
 
 .btn-outline {
-  border-style: dashed;
+  background: transparent;
+  color: var(--color-text-main);
+  border-style: solid;
+  border-color: var(--color-border-strong);
+}
+
+.btn-outline::after {
+  display: none;
+}
+
+.btn-outline:hover:not(:disabled) {
+  background: var(--color-bg-sidebar);
+  border-color: var(--color-text-muted);
+  box-shadow: 0 2px 8px rgba(26, 22, 18, 0.08);
+  transform: translateY(-1px);
 }
 
 /* ========================================
-   PROCESSING ANIMATIONS
-   ======================================== */
-
-.loading-bar-container {
-  width: 100%;
-  height: 6px;
-  background: var(--color-bg-clay);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 1rem;
-}
-
-.loading-bar-fill {
-  height: 100%;
-  background: var(--color-text-main);
-  transition: width 0.4s ease;
-}
-
-/* ========================================
-   EMOTION VISUALS
-   ======================================== */
-
-.emotion-blob {
-  width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--color-bg-clay);
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ========================================
-   UTILITIES
+   UPPERCASE TRACKING UTILITY
    ======================================== */
 
 .uppercase-tracking {
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   font-weight: 600;
-  font-size: 0.7rem;
+  font-size: 0.6875rem;
   color: var(--color-text-muted);
+  font-family: var(--font-body);
+}
+
+/* ========================================
+   LOADING BAR
+   ======================================== */
+
+.loading-bar-container {
+  width: 100%;
+  height: 3px;
+  background: var(--color-bg-clay);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent-orange), var(--color-text-main));
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.loading-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5));
+  animation: shimmer-bar 1.2s ease-in-out infinite;
+}
+
+@keyframes shimmer-bar {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ========================================
+   EMOTION BLOB
+   ======================================== */
+
+.emotion-blob {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--color-bg-clay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 8px rgba(26, 22, 18, 0.06),
+    inset 0 1px 2px rgba(255,255,255,0.7);
+}
+
+/* ========================================
+   ANIMATED SCAN LINE (decorative)
+   ======================================== */
+
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(400%); }
+}
+
+.scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(194, 98, 42, 0.3), transparent);
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+}
+
+/* ========================================
+   PULSE RING
+   ======================================== */
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 0.5; }
+  70% { transform: scale(1.08); opacity: 0; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+.pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border: 2px solid var(--color-accent-red);
+  border-radius: 50%;
+  animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ========================================
+   DATA TICKER
+   ======================================== */
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-wrap {
+  overflow: hidden;
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-bg-sidebar);
+}
+
+.ticker-content {
+  display: flex;
+  white-space: nowrap;
+  animation: ticker 28s linear infinite;
+  width: max-content;
+}
+
+/* ========================================
+   GRATICULE GRID BACKGROUND (decorative)
+   ======================================== */
+
+.graticule-bg {
+  background-image: 
+    linear-gradient(rgba(122, 110, 101, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(122, 110, 101, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ========================================
+   RADIAL CORNER ACCENTS
+   ======================================== */
+
+.corner-accent::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle at 100% 100%, var(--color-bg-clay) 0%, transparent 70%);
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.5;
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-sidebar);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* ========================================
+   SELECTION
+   ======================================== */
+
+::selection {
+  background: rgba(194, 98, 42, 0.15);
+  color: var(--color-text-main);
+}
+
+/* ========================================
+   FOCUS STYLES
+   ======================================== */
+
+:focus-visible {
+  outline: 2px solid var(--color-accent-orange);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ========================================
+   CHART CONTAINER
+   ======================================== */
+
+.chart-wrapper {
+  position: relative;
+}
+
+.chart-wrapper canvas {
+  border-radius: 8px;
+}
+
+/* ========================================
+   STAT CARD HIGHLIGHT
+   ======================================== */
+
+.stat-highlight {
+  background: linear-gradient(135deg, var(--color-bg-white) 0%, var(--color-bg-sidebar) 100%);
+  border: 1.5px solid var(--color-border-strong);
+}
+
+/* ========================================
+   VIDEO CONTAINER
+   ======================================== */
+
+.video-container {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-bg-sidebar);
+}
+
+.video-container video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ========================================
+   SONG LIST ITEM
+   ======================================== */
+
+.song-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.song-item:hover {
+  background: var(--color-bg-sidebar);
+}
+
+.song-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 0;
+  background: var(--color-accent-orange);
+  border-radius: 1px;
+  transition: height 0.2s ease;
+}
+
+.song-item:hover::before {
+  height: 60%;
+}
+
+/* ========================================
+   MODAL BACKDROP
+   ======================================== */
+
+.modal-backdrop {
+  backdrop-filter: blur(12px) saturate(0.8);
+  background: rgba(249, 246, 241, 0.7);
+}
+
+/* ========================================
+   DIVIDER WITH LABEL
+   ======================================== */
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.section-divider::before,
+.section-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+/* ========================================
+   PROGRESS SCROLL BAR
+   ======================================== */
+
+.scroll-progress {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent-orange), var(--color-text-main));
+  transform-origin: left;
+  z-index: 999;
+}
+
+/* ========================================
+   TAG / BADGE
+   ======================================== */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+}
+
+/* ========================================
+   FADE IN KEYFRAME (utility)
+   ======================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ========================================
+   BLINK CURSOR (for mono text)
+   ======================================== */
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-end infinite;
+  margin-left: 1px;
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 768px) {
+  .bento-container {
+    padding: 0 1rem 2rem;
+    gap: 1rem;
+  }
+
+  .gallery-card {
+    border-radius: 14px;
+    padding: 1rem;
+  }
 }
