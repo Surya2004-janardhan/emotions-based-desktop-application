@@ -1,19 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, ShieldCheck, RefreshCcw, Command, Layout } from "lucide-react";
-import NeuralPulse from "./components/NeuralPulse";
+import { Activity, ShieldCheck, Zap, Layers, Command, Cpu, Terminal, Database, BarChart3, ScanEye } from "lucide-react";
+import UploadSection from "./components/UploadSection";
 import EmotionRadar from "./components/EmotionRadar";
 import NarrativeColumn from "./components/NarrativeColumn";
 import RecommendationGrid from "./components/RecommendationGrid";
+import SystemTelemetry from "./components/SystemTelemetry";
+import TimelineChart from "./components/TimelineChart";
 
 function App() {
-  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  const videoRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
 
   const processVideo = async (file) => {
     if (!file) return;
@@ -33,119 +31,156 @@ function App() {
       if (data.error) throw new Error(data.error);
       setResults(data);
     } catch (err) {
-      setError("System failure. Retrying...");
+      setError("Analysis Session Interrupted. Retrying...");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const startRecording = async () => {
-    setError(null);
-    setResults(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (videoRef.current) videoRef.current.srcObject = stream;
-      
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'video/webm' });
-      chunksRef.current = [];
-
-      mediaRecorderRef.current.ondataavailable = (e) => chunksRef.current.push(e.data);
-      mediaRecorderRef.current.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        const file = new File([blob], "capture.webm", { type: "video/webm" });
-        processVideo(file);
-        stream.getTracks().forEach((track) => track.stop());
-      };
-
-      mediaRecorderRef.current.start();
-      setIsRecording(true);
-
-      setTimeout(() => {
-        if (mediaRecorderRef.current?.state === "recording") {
-          mediaRecorderRef.current.stop();
-          setIsRecording(false);
-        }
-      }, 11000);
-
-    } catch (err) {
-      setError("Camera Access Denied");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-white text-gray-900 selection:bg-gray-100 p-8 lg:p-20 relative font-sans">
+    <div className="min-h-screen bg-bg-deep text-text-bright selection:bg-white selection:text-black p-10 lg:p-16 relative font-sans">
       
-      {/* ── Header Area ── */}
-      <header className="flex justify-between items-center mb-40 max-w-6xl mx-auto py-8 border-b border-gray-100">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-3">
-             <Command className="w-6 h-6" /> EmotionAI
+      {/* ── Background Grid & Orbs ── */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-white/[0.04] rounded-full filter blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-white/[0.02] rounded-full filter blur-[100px] animate-pulse" style={{ animationDelay: '2.5s' }} />
+        <div className="absolute inset-0 opacity-[0.05] bg-[linear-gradient(to_right,#ffffff12_1px,transparent_1px),linear-gradient(to_bottom,#ffffff12_1px,transparent_1px)] bg-[size:60px_60px]" />
+      </div>
+
+      {/* ── Header: Centered ── */}
+      <header className="flex flex-col items-center mb-32 max-w-7xl mx-auto py-12 border-b border-white/5 relative z-10 text-center">
+        <div className="flex flex-col gap-4 items-center">
+          <h1 className="text-5xl font-black tracking-tighter flex items-center gap-6">
+             <Command className="w-10 h-10 opacity-20" /> EMOTION AI
           </h1>
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.5em] mt-1 ml-1 opacity-60">Human State Analysis // Prototype 5.x</span>
+          <span className="text-[11px] font-extrabold text-white/20 uppercase tracking-[1em] ml-2">Multimodal State Synthesis</span>
         </div>
 
-        <div className="flex items-center gap-4 bg-gray-50 px-6 py-2.5 rounded-full border border-gray-100 group">
-           <div className={`w-2 h-2 rounded-full flex items-center justify-center transition-all ${isProcessing ? 'bg-black animate-pulse' : 'bg-gray-200'}`} />
-           <span className="text-[10px] font-extrabold uppercase tracking-widest text-gray-500 group-hover:text-black transition-colors">
-             {isProcessing ? 'Processing Telemetry' : 'Standby System'}
+        <div className="mt-12 flex items-center gap-4 bg-white/[0.02] px-10 py-3.5 rounded-full border border-white/5 backdrop-blur-3xl group shadow-2xl">
+           <div className={`w-2.5 h-2.5 rounded-full flex items-center justify-center transition-all ${isProcessing ? 'bg-white animate-pulse' : 'bg-white/10'}`} />
+           <span className="text-[10px] font-black uppercase tracking-[0.5em] text-white/30 group-hover:text-white/80 transition-all">
+             {isProcessing ? 'SYNCHRONIZING' : 'CORE_STANDBY'}
            </span>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto space-y-48">
+      <main className="max-w-7xl mx-auto space-y-48 relative z-10 pb-48">
         
-        {/* Recording Section - Clean Centered Iris */}
-        <section className="flex flex-col items-center gap-16 relative">
-          <NeuralPulse 
-            isRecording={isRecording} 
-            videoRef={videoRef} 
-          />
-          
-          <div className="flex flex-col items-center gap-8">
-            <button
-              onClick={startRecording}
-              disabled={isRecording || isProcessing}
-              className="px-16 py-6 bg-black text-white rounded-full text-[12px] font-bold uppercase tracking-[0.6em] transition-all hover:tracking-[0.8em] active:scale-95 disabled:opacity-30 disabled:tracking-[0.6em] shadow-[0_20px_40px_rgba(0,0,0,0.15)]"
-            >
-              {isRecording ? 'Capturing Session' : 'Initiate Session'}
-            </button>
-            <AnimatePresence>
-              {error && (
-                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2 text-black text-[10px] font-black uppercase tracking-widest bg-gray-50 px-6 py-2 rounded-full border border-gray-100">
-                    <Activity className="w-3 h-3 text-red-500" /> {error}
-                 </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Phase 1: Ingestion Hub */}
+        <section className="flex flex-col items-center">
+          <div className="w-full grid lg:grid-cols-2 gap-16 items-center">
+             <div className="space-y-12">
+                <div className="flex flex-col gap-6">
+                   <div className="flex items-center gap-4 opacity-30">
+                      <Database className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em]">Node Protocol Ingestion</span>
+                   </div>
+                   <h2 className="text-6xl font-black tracking-tighter leading-tight italic">Ingest Sensory Data Stream.</h2>
+                   <p className="text-xl text-white/40 leading-relaxed font-medium">Extracting emotion markers from high-frame sequence and audio frequency domain. Analysis duration calibrated for 11 second window.</p>
+                </div>
+                
+                {/* Micro Details */}
+                <div className="grid grid-cols-2 gap-8 border-t border-white/5 pt-12">
+                   <div className="flex flex-col gap-2">
+                      <span className="text-[8px] font-black uppercase tracking-[0.3em] opacity-20 italic">Validated Modality</span>
+                      <span className="text-xs font-bold text-white/60 flex items-center gap-2 underline decoration-white/20 underline-offset-4 cursor-crosshair">Visual Neural Net 3.4</span>
+                   </div>
+                   <div className="flex flex-col gap-2">
+                      <span className="text-[8px] font-black uppercase tracking-[0.3em] opacity-20 italic">Encrypted Transfer</span>
+                      <span className="text-xs font-bold text-white/60 flex items-center gap-2 underline decoration-white/20 underline-offset-4 cursor-crosshair">AES-256 Tunnel active</span>
+                   </div>
+                </div>
+             </div>
+             
+             <UploadSection 
+                onFileSelect={processVideo} 
+                isProcessing={isProcessing} 
+             />
           </div>
+
+          <AnimatePresence>
+            {error && (
+               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="flex items-center gap-3 text-white text-[10px] font-black uppercase tracking-[0.4em] bg-white/5 px-8 py-4 rounded-full border border-white/10 mt-16 group hover:border-red-500/40 transition-all">
+                  <Activity className="w-4 h-4 text-red-500 animate-pulse" /> {error}
+               </motion.div>
+            )}
+            {isProcessing && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-10 mt-24 group relative text-center">
+                <div className="flex items-center gap-4">
+                   <Zap className="w-6 h-6 text-white/40 animate-pulse" />
+                   <span className="text-[14px] font-black uppercase tracking-[1.5em] text-white/20 italic">Extracting Spectral Metadata</span>
+                </div>
+                <div className="w-full max-w-xl h-[2px] bg-white/[0.05] relative overflow-hidden rounded-full">
+                   <motion.div 
+                     initial={{ x: '-100%' }}
+                     animate={{ x: '100%' }}
+                     transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                     className="absolute inset-0 bg-white/60"
+                   />
+                </div>
+                <div className="flex items-center gap-12 opacity-10">
+                   {['FFMPEG', 'OPENCV', 'MFCC', 'LSTM'].map(lib => (
+                      <span key={lib} className="text-[9px] font-black uppercase tracking-widest">{lib}</span>
+                   ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </section>
 
-        {/* Results Overview - Detailed Monochrome Analysis */}
+        {/* Phase 2: Synthesis & Telemetry Dashboard */}
         <AnimatePresence>
           {results && !isProcessing && (
             <motion.section 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="grid lg:grid-cols-2 gap-24 items-start"
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-32"
             >
-              <div className="lg:sticky lg:top-20">
-                <EmotionRadar emotions={results.emotion_distribution} />
-              </div>
-              <div className="space-y-4">
-                <NarrativeColumn story={results.story} quote={results.quote} />
+              {/* Telemetry Bar */}
+              <SystemTelemetry results={results} />
+
+              <div className="grid lg:grid-cols-2 gap-32 items-start">
+                {/* Analytical Column */}
+                <div className="space-y-32">
+                  <div className="space-y-12">
+                     <div className="flex items-center gap-4 opacity-30">
+                        <ScanEye className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Visual Modality Pattern Map</span>
+                     </div>
+                     <EmotionRadar emotions={results.emotion_distribution} />
+                  </div>
+                  
+                  <div className="space-y-12">
+                     <div className="flex items-center gap-4 opacity-30">
+                        <BarChart3 className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em]">Temporal Convergence Analysis</span>
+                     </div>
+                     <TimelineChart data={results.timeline_data} />
+                  </div>
+                </div>
+
+                {/* Narrative Column */}
+                <div className="lg:sticky lg:top-24 space-y-12">
+                   <div className="flex items-center gap-4 opacity-30">
+                      <Terminal className="w-4 h-4" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.4em]">Synthesized Narrative Log</span>
+                   </div>
+                   <NarrativeColumn story={results.story} quote={results.quote} />
+                </div>
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        {/* Discovery Feed - Clean High-End Cards */}
+        {/* Phase 3: Discovery Masonry */}
         <AnimatePresence>
           {results && !isProcessing && (
             <motion.section
-              initial={{ opacity: 0, scale: 0.98 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 1 }}
+              transition={{ duration: 1.5, delay: 0.5 }}
             >
               <RecommendationGrid songs={results.songs} video={{ title: results.video, link: results.video }} />
             </motion.section>
@@ -153,22 +188,20 @@ function App() {
         </AnimatePresence>
       </main>
 
-      <footer className="mt-48 pt-20 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-12 max-w-6xl mx-auto opacity-30">
-        <div className="flex items-center gap-8 text-[9px] font-black uppercase tracking-[0.6em] italic">
-           <span>Session Active</span>
-           <div className="w-1.5 h-1.5 bg-black rounded-full" />
-           <span>2026.AR2</span>
-           <div className="w-1.5 h-1.5 bg-black rounded-full" />
-           <span>Encrypted Feed</span>
-        </div>
-        <div className="flex items-center gap-3">
-           <Activity className="w-4 h-4" />
-           <span className="text-[9px] font-black uppercase tracking-[0.4em] text-center italic group cursor-help transition-all hover:tracking-[0.5em]">Real-time state synthesis protocol validated</span>
-        </div>
+      {/* Simple Footer without scrolling ticker */}
+      <footer className="mt-32 max-w-7xl mx-auto pb-24 relative z-10 font-sans italic opacity-20 border-t border-white/5 pt-20">
+         <div className="flex flex-col md:flex-row justify-between items-center gap-12">
+            <div className="flex items-center gap-12 text-[10px] font-black uppercase tracking-[1em]">
+               <span>SYSTEM_ACTIVE</span>
+               <div className="w-1.5 h-1.5 bg-white rounded-full" />
+               <span>2026.AR</span>
+            </div>
+            <div className="flex items-center gap-6 group cursor-crosshair transition-all hover:opacity-100">
+              <ShieldCheck className="w-5 h-5" />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] transition-all hover:tracking-[0.6em]">Validated Neural Architecture // SECURE_NODE</span>
+            </div>
+         </div>
       </footer>
-
-      {/* Background Decorative Lines */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03] -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
     </div>
   );
 }
