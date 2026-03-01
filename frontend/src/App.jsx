@@ -105,27 +105,12 @@ const TICKER_ITEMS = [
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function TickerBar() {
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
-  return (
-    <div className="ticker-wrap py-2 mb-12">
-      <div className="ticker-content">
-        {items.map((item, i) => (
-          <span key={i} className="uppercase-tracking px-8 text-[var(--color-text-muted)] opacity-60">
-            {item} <span className="opacity-30 mx-2">·</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 function StatusDot({ active = true }) {
   return (
     <span className="relative inline-flex">
-      <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-[var(--color-accent-teal)]" : "bg-[var(--color-border-strong)]"}`} />
+      <span className={`w-1 h-1 rounded-full ${active ? "bg-[var(--color-bg-clay)]" : "bg-[var(--color-border-strong)] opacity-30"}`} />
       {active && (
-        <span className="absolute inset-0 rounded-full bg-[var(--color-accent-teal)] animate-ping opacity-60" />
+        <span className="absolute inset-0 rounded-full bg-[var(--color-bg-clay)] animate-ping opacity-40" />
       )}
     </span>
   );
@@ -133,45 +118,36 @@ function StatusDot({ active = true }) {
 
 function SectionHeader({ num, label, icon: Icon, status }) {
   return (
-    <div className="flex justify-between items-center mb-8 pb-6 border-b border-[var(--color-border-subtle)]">
-      <h2 className="text-lg font-serif-luxe flex items-center gap-3 text-[var(--color-text-main)]">
-        <span className="font-mono-code text-xs text-[var(--color-text-muted)] font-medium mr-1 tabular-nums">{num}</span>
-        {Icon && <Icon className="w-4 h-4 text-[var(--color-text-muted)]" />}
-        {label}
-      </h2>
-      <div className="flex gap-2 items-center">
-        <StatusDot active={status === "ready"} />
-        <span className="uppercase-tracking">{status === "ready" ? "System Ready" : status}</span>
+    <div className="flex items-center justify-between mb-3 border-b border-[var(--color-border-subtle)] pb-2">
+      <div className="flex items-center gap-2">
+        <div className="w-6 h-6 border border-[var(--color-border-strong)] flex items-center justify-center text-[var(--color-text-main)]">
+          {Icon && <Icon className="w-3.5 h-3.5" />}
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[7px] font-mono text-[var(--color-bg-clay)] leading-none mb-0.5">PROTOCOL_{num}</span>
+          <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-[var(--color-text-main)] leading-none">{label}</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 px-2 py-0.5 bg-[var(--color-bg-sidebar)]/30 border border-[var(--color-border-subtle)] rounded-sm">
+        <StatusDot active={status === "active"} />
+        <span className="text-[7px] font-mono text-[var(--color-text-main)] uppercase">{status}</span>
       </div>
     </div>
   );
 }
 
 function EmotionCard({ label, val, icon: Icon, highlight, status }) {
-  const color = emotionColors[val] || "#7a6e65";
   return (
-    <div
-      className={`flex flex-col items-center p-7 rounded-2xl border transition-all duration-300 ${
-        highlight
-          ? "bg-[var(--color-bg-sidebar)] border-[var(--color-border-strong)] shadow-inner stat-highlight"
-          : "bg-white border-[var(--color-border-subtle)]"
-      }`}
-    >
-      <span className="uppercase-tracking mb-5 opacity-60">{status}</span>
-      <div
-        className="emotion-blob w-16 mb-5 shadow-sm"
-        style={{ background: highlight ? `${color}18` : "var(--color-bg-clay)" }}
-      >
-        <Icon className={`w-7 h-7 ${highlight ? "text-[var(--color-text-main)]" : "text-[var(--color-text-muted)]"}`} />
+    <div className={`gallery-card group py-3 px-4 ${highlight ? 'bg-[var(--color-text-main)] text-[var(--color-bg-main)]' : 'bg-white/40'}`}>
+      <div className="flex justify-between items-start mb-2">
+        {Icon && <Icon className={`w-3.5 h-3.5 ${highlight ? 'text-[var(--color-bg-main)]' : 'text-[var(--color-bg-clay)]'}`} />}
+        <span className={`text-[7px] font-mono uppercase tracking-widest ${highlight ? 'text-[var(--color-bg-main)]/60' : 'text-[var(--color-bg-clay)]'}`}>
+          {status}
+        </span>
       </div>
-      <span className="text-[10px] font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-2">{label}</span>
-      <div
-        className={`text-2xl font-serif-luxe capitalize ${
-          highlight ? "text-[var(--color-text-main)]" : "text-[var(--color-text-secondary)]"
-        }`}
-        style={highlight ? { color } : {}}
-      >
-        {val || "—"}
+      <div className="space-y-0.5">
+        <span className={`text-[8px] font-bold uppercase tracking-widest block opacity-60`}>{label}</span>
+        <span className="text-sm font-bold truncate block">{val || "—"}</span>
       </div>
     </div>
   );
@@ -369,10 +345,9 @@ function App() {
     })),
   });
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <ErrorBoundary>
-      <div className="min-h-screen relative graticule-bg">
+      <div className="min-h-screen relative graticule-bg font-body selection:bg-[var(--color-bg-clay)]/20">
         <div className="noise-overlay" aria-hidden="true" />
 
         {/* Scroll Progress */}
@@ -381,48 +356,56 @@ function App() {
           style={{ scaleX }}
         />
 
-        <div className="relative z-10 flex flex-col">
+        <div className="relative z-10 flex flex-col min-h-screen">
 
-          {/* ── HEADER ─────────────────────────────────────────────────── */}
-          <header className="flex flex-col items-center text-center px-6 pt-16 pb-8">
+          {/* ── SYSTEM HUD TOP BAR ─────────────────────────────────────── */}
+          <nav className="sticky top-0 z-50 w-full bg-[var(--color-bg-main)]/80 backdrop-blur-md border-b border-[var(--color-border-subtle)] px-6 py-3">
+            <div className="max-w-[1400px] mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 flex items-center justify-center bg-[var(--color-text-main)] text-[var(--color-bg-main)] rounded-sm">
+                  <Brain className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold tracking-[0.2em] text-[var(--color-text-main)] uppercase leading-none mb-1">Cortex Engine</span>
+                  <span className="text-[9px] font-mono text-[var(--color-bg-clay)] tracking-widest uppercase leading-none italic">Active Protocol v5.0.1</span>
+                </div>
+              </div>
+
+              <div className="hidden md:flex items-center gap-8">
+                {['Status', 'Parsing', 'Synthesis', 'Narrative'].map((item, i) => (
+                  <div key={item} className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-[var(--color-bg-clay)] opacity-40">0{i+1}</span>
+                    <span className="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-secondary)] hover:text-[var(--color-text-main)] cursor-pointer transition-colors">{item}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 px-3 py-1.5 bg-[var(--color-bg-sidebar)] border border-[var(--color-border-subtle)] rounded-sm">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-bg-clay)] animate-pulse" />
+                <span className="text-[9px] font-mono font-bold text-[var(--color-text-main)]">SYS_LINK_OK</span>
+              </div>
+            </div>
+          </nav>
+
+          {/* ── HUD HEADER (Minimal Spacing) ─────────────────────────── */}
+          <header className="flex flex-col items-center text-center px-6 pt-10 pb-6">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, ease: [0.4, 0, 0.2, 1] }}
+              transition={{ duration: 0.8 }}
               className="flex flex-col items-center max-w-[1160px] w-full"
             >
-              <div className="tag mb-5">
-                <Radio className="w-2.5 h-2.5 text-[var(--color-accent-orange)]" />
-                Cortex Engine v5.0
-              </div>
-
-              <h1 className="font-serif-luxe text-5xl md:text-7xl tracking-tight text-[var(--color-text-main)] mb-4 leading-none">
-                Emotion<span className="italic text-[var(--color-accent-orange)]">AI</span>
+              <h1 className="text-4xl md:text-6xl tracking-tighter text-[var(--color-text-main)] mb-1 font-light">
+                EMOTION<span className="font-bold">AI</span>
               </h1>
-
-              <p className="text-sm md:text-base text-[var(--color-text-muted)] font-light max-w-md leading-relaxed">
-                A minimalist protocol for human emotional synthesis
-                <br />
-                <span className="font-mono-code text-[10px] opacity-50">FACIAL · VOCAL · MULTIMODAL</span>
+              <p className="text-[9px] text-[var(--color-text-secondary)] font-bold uppercase tracking-[0.5em] opacity-50">
+                Neural Mapping Protocol
               </p>
-
-              <div className="mt-6 flex items-center gap-6 text-[9px] uppercase tracking-widest text-[var(--color-text-muted)] opacity-40 font-semibold">
-                <span>v5.0.1</span>
-                <span className="w-px h-3 bg-current" />
-                <span>7 Emotion Classes</span>
-                <span className="w-px h-3 bg-current" />
-                <span>Real-Time Analysis</span>
-              </div>
             </motion.div>
           </header>
 
-          {/* ── TICKER ─────────────────────────────────────────────────── */}
-          <div className="max-w-[1160px] w-full mx-auto px-6 mb-10">
-            <TickerBar />
-          </div>
-
-          {/* ── CAPTURE SECTION ────────────────────────────────────────── */}
-          <main className="bento-container items-stretch">
+          {/* ── MAIN CONTENT (High Density) ─────────────────────────── */}
+          <main className="bento-container items-start flex-1 py-4">
             <motion.section
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
@@ -430,13 +413,13 @@ function App() {
               className="col-span-12"
             >
               <div className="gallery-card corner-accent">
-                <SectionHeader num="01" label="Capture" icon={ScanEye} status="ready" />
+                <SectionHeader num="01" label="Stream_Sync" icon={Activity} status="active" />
 
-                <div className="grid md:grid-cols-2 gap-8">
+                <div className="grid md:grid-cols-2 gap-6">
 
                   {/* Upload */}
-                  <div className="flex flex-col gap-4">
-                    <div className="group relative h-56 rounded-2xl bg-[var(--color-bg-sidebar)] border border-dashed border-[var(--color-border-strong)] flex items-center justify-center transition-all hover:bg-[var(--color-bg-clay)] hover:border-[var(--color-text-muted)] overflow-hidden cursor-pointer">
+                  <div className="flex flex-col gap-3">
+                    <div className="group relative h-48 rounded-2xl bg-[var(--color-bg-sidebar)] border border-dashed border-[var(--color-border-strong)] flex items-center justify-center transition-all hover:bg-white/50 overflow-hidden cursor-pointer">
                       <input
                         type="file"
                         id="file-upload"
@@ -446,15 +429,15 @@ function App() {
                       />
                       <label
                         htmlFor="file-upload"
-                        className="w-full h-full flex flex-col items-center justify-center p-8 text-center cursor-pointer"
+                        className="w-full h-full flex flex-col items-center justify-center p-6 text-center cursor-pointer"
                       >
-                        <div className="w-12 h-12 rounded-full bg-white border border-[var(--color-border-subtle)] flex items-center justify-center mb-4 shadow-sm transition-transform group-hover:-translate-y-1">
-                          <Upload className="w-5 h-5 text-[var(--color-text-muted)]" />
+                        <div className="w-10 h-10 rounded-full bg-white border border-[var(--color-border-subtle)] flex items-center justify-center mb-3 shadow-sm group-hover:-translate-y-1 transition-transform">
+                          <Upload className="w-5 h-5 text-[var(--color-text-main)]" />
                         </div>
-                        <span className="font-semibold text-sm text-[var(--color-text-main)] mb-1">
-                          Upload video archive
+                        <span className="font-bold text-base text-[var(--color-text-main)] mb-1">
+                          Upload archive
                         </span>
-                        <span className="font-mono-code text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest">
+                        <span className="font-mono-code text-[10px] text-[var(--color-text-main)]/60 font-bold uppercase tracking-widest">
                           MP4 · WEBM · MPEG
                         </span>
                       </label>
@@ -600,8 +583,8 @@ function App() {
                       </div>
                     </div>
 
-                    <p className="mt-8 text-xs text-[var(--color-text-muted)] font-light italic max-w-xs leading-relaxed">
-                      Computational shards calibrating for {processingStatus.toLowerCase()}…
+                    <p className="mt-4 text-[10px] text-[var(--color-bg-clay)] font-medium uppercase tracking-[0.2em] max-w-xs leading-relaxed opacity-60">
+                      Synchronizing neural shards for {processingStatus.toLowerCase()}…
                     </p>
                   </div>
                 </motion.div>
@@ -623,30 +606,30 @@ function App() {
                 <div className="col-span-12 gallery-card">
                   <SectionHeader num="02" label="Synthesis" icon={Brain} status="complete" />
 
-                  <div className="grid md:grid-cols-3 gap-5 mb-10">
+                  <div className="grid md:grid-cols-3 gap-4 mb-6">
                     <EmotionCard label="Vocal Layer" val={results?.audio_emotion || "—"} icon={Volume2} status="Channel 01" />
                     <EmotionCard label="Visual Layer" val={results?.video_emotion || "—"} icon={ScanEye} status="Channel 02" />
                     <EmotionCard label="Consensus" val={results?.fused_emotion || "—"} icon={Brain} status="Final Fusion" highlight />
                   </div>
 
-                  <div className="px-8 py-10 rounded-2xl bg-[var(--color-bg-sidebar)] border border-[var(--color-border-subtle)] text-center">
-                    <div className="font-mono-code text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest mb-4 opacity-50">
+                  <div className="px-5 py-5 rounded-lg bg-[var(--color-bg-sidebar)] border border-[var(--color-border-subtle)] text-center">
+                    <div className="font-mono-code text-[9px] text-[var(--color-text-secondary)] uppercase tracking-[0.3em] mb-2 font-bold opacity-60">
                       Reasoning output
                     </div>
-                    <p className="text-xl md:text-2xl font-serif-luxe italic text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto">
+                    <p className="text-lg md:text-xl font-serif-luxe italic text-[var(--color-text-main)] font-medium leading-tight max-w-2xl mx-auto">
                       "{results.reasoning}"
                     </p>
                   </div>
                 </div>
 
                 {/* ── Vocal Chart ───────────────────────────────────────── */}
-                <div className="col-span-12 lg:col-span-6 gallery-card" style={{ height: 440 }}>
-                  <div className="flex justify-between items-center mb-6 pb-5 border-b border-[var(--color-border-subtle)]">
-                    <h3 className="font-serif-luxe text-lg text-[var(--color-text-main)] flex items-center gap-2.5">
-                      <Volume2 className="w-4 h-4 text-[var(--color-text-muted)]" />
+                <div className="col-span-12 lg:col-span-6 gallery-card" style={{ height: 400 }}>
+                  <div className="flex justify-between items-center mb-4 pb-3 border-b border-[var(--color-border-subtle)]">
+                    <h3 className="font-serif-luxe text-lg text-[var(--color-text-main)] font-medium flex items-center gap-2.5">
+                      <Volume2 className="w-4 h-4 text-[var(--color-bg-clay)]" />
                       Vocal Trajectory
                     </h3>
-                    <span className="tag">Temporal Log</span>
+                    <span className="text-[10px] uppercase tracking-widest text-[var(--color-bg-clay)] font-bold">Temporal Log</span>
                   </div>
                   <div style={{ height: 300 }}>
                     {Array.isArray(results?.audio_probs_temporal) && results.audio_probs_temporal.length > 0 ? (
@@ -661,13 +644,13 @@ function App() {
                 </div>
 
                 {/* ── Facial Chart ──────────────────────────────────────── */}
-                <div className="col-span-12 lg:col-span-6 gallery-card" style={{ height: 440 }}>
-                  <div className="flex justify-between items-center mb-6 pb-5 border-b border-[var(--color-border-subtle)]">
-                    <h3 className="font-serif-luxe text-lg text-[var(--color-text-main)] flex items-center gap-2.5">
-                      <ScanEye className="w-4 h-4 text-[var(--color-text-muted)]" />
+                <div className="col-span-12 lg:col-span-6 gallery-card" style={{ height: 420 }}>
+                  <div className="flex justify-between items-center mb-4 pb-4 border-b border-[var(--color-border-subtle)]">
+                    <h3 className="font-serif-luxe text-xl text-[var(--color-text-main)] font-black flex items-center gap-2.5">
+                      <ScanEye className="w-4 h-4 text-[var(--color-accent-teal)]" />
                       Facial Geometry
                     </h3>
-                    <span className="tag">Flow Analysis</span>
+                    <span className="tag text-[var(--color-text-main)] font-black">Flow Analysis</span>
                   </div>
                   <div style={{ height: 300 }}>
                     {results?.video_probs_temporal?.length > 0 ? (
@@ -682,10 +665,10 @@ function App() {
                 </div>
 
                 {/* ── Narratives Header ─────────────────────────────────── */}
-                <div className="col-span-12 pt-10">
-                  <div className="section-divider mb-12">
-                    <h2 className="font-serif-luxe text-3xl text-[var(--color-text-muted)] px-4 shrink-0">
-                      <span className="font-mono-code text-sm text-[var(--color-text-muted)]/50 font-normal mr-2">03</span>
+                <div className="col-span-12 pt-6">
+                  <div className="section-divider mb-8">
+                    <h2 className="font-serif-luxe text-3xl text-[var(--color-text-main)] font-black px-4 shrink-0">
+                      <span className="font-mono-code text-sm text-[var(--color-text-main)] opacity-40 font-bold mr-2">03</span>
                       Narratives
                     </h2>
                   </div>
@@ -842,28 +825,28 @@ function App() {
                 onClick={(e) => e.target === e.currentTarget && setShowStoryModal(false)}
               >
                 <motion.div
-                  initial={{ scale: 0.93, opacity: 0, y: 16 }}
+                  initial={{ scale: 0.95, opacity: 0, y: 16 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.93, opacity: 0, y: 16 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 16 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="gallery-card max-w-2xl w-full max-h-[80vh] overflow-y-auto relative bg-white shadow-2xl"
-                  style={{ padding: "2.5rem" }}
+                  className="gallery-card max-w-2xl w-full max-h-[80vh] overflow-y-auto relative bg-white border border-[var(--color-border-subtle)]"
+                  style={{ padding: "2rem" }}
                 >
                   <button
                     onClick={() => setShowStoryModal(false)}
-                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-[var(--color-bg-sidebar)] transition-colors"
+                    className="absolute top-4 right-4 p-2 rounded hover:bg-[var(--color-bg-sidebar)] transition-colors"
                   >
-                    <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+                    <X className="w-4 h-4 text-[var(--color-bg-clay)]" />
                   </button>
 
-                  <div className="flex items-center gap-3 mb-8 pb-6 border-b border-[var(--color-border-subtle)]">
-                    <BookOpen className="w-5 h-5 text-[var(--color-text-muted)]" />
-                    <h4 className="font-serif-luxe text-xl text-[var(--color-text-main)]">
-                      Complete Emotional Narrative
+                  <div className="flex items-center gap-4 mb-6 pb-4 border-b border-[var(--color-border-subtle)]">
+                    <BookOpen className="w-5 h-5 text-[var(--color-bg-clay)]" />
+                    <h4 className="font-serif-luxe text-lg text-[var(--color-text-main)] font-medium uppercase tracking-widest">
+                      Emotional Analysis Narrative
                     </h4>
                   </div>
 
-                  <div className="text-lg font-serif-luxe leading-relaxed text-[var(--color-text-secondary)] italic pr-1">
+                  <div className="text-base font-serif-luxe leading-relaxed text-[var(--color-text-main)] italic pr-1 font-medium">
                     {results.story}
                   </div>
 
