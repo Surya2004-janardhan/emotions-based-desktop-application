@@ -16,6 +16,7 @@ export default function App() {
   const processing = useProcessing();
   const [phase, setPhase] = useState('idle');
   const [chatOpen, setChatOpen] = useState(false);
+  const [chatKey, setChatKey] = useState(0);
 
   const handleAnalyze = async (input, type) => {
     setPhase('processing');
@@ -27,6 +28,7 @@ export default function App() {
   const handleReset = () => {
     processing.reset();
     setPhase('idle');
+    setChatKey(k => k + 1); // remount chatbot to clear messages
   };
 
   return (
@@ -104,7 +106,7 @@ export default function App() {
       </main>
 
       {/* Chatbot */}
-      <Chatbot results={processing.results} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+      <Chatbot key={chatKey} results={processing.results} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
 
       <footer className="mt-16 text-center pb-6">
         <p className="text-xs text-text-muted">EmotionAI · Multimodal Emotion Recognition System · Team D7</p>
