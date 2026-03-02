@@ -44,7 +44,7 @@ export default function App() {
           Discover Your <span className="text-wattle">Emotions</span>
         </h1>
         <p className="mt-2 text-sm text-text-muted max-w-md mx-auto">
-          Upload a video or record live — our AI analyzes audio & visual cues to understand your emotional state.
+          Upload a video - our AI analyzes audio & visual cues to understand your emotional state.
         </p>
       </header>
 
