@@ -44,9 +44,9 @@ function computeAdvancedMetrics(results) {
   const valenceEnd = valenceArr.slice(-Math.ceil(valenceArr.length / 3)).reduce((s, v) => s + v, 0) / Math.ceil(valenceArr.length / 3);
   const valenceShift = valenceEnd - valenceStart;
 
-  if (valenceShift > 0.2) metrics.valenceTrajectory = { direction: 'Ascending', desc: 'Emotional state improved over time — moved toward positive valence', score: Math.min(1, (valenceEnd + 1) / 2) };
-  else if (valenceShift < -0.2) metrics.valenceTrajectory = { direction: 'Descending', desc: 'Emotional valence declined — shifted toward negative sentiment', score: Math.max(0, (valenceEnd + 1) / 2) };
-  else metrics.valenceTrajectory = { direction: 'Stable', desc: `Emotional valence remained ${avgValence > 0.2 ? 'positive' : avgValence < -0.2 ? 'negative' : 'neutral'} throughout`, score: (avgValence + 1) / 2 };
+  if (valenceShift > 0.2) metrics.valenceTrajectory = { direction: 'Getting Better', desc: 'Your mood improved over time — you started feeling more positive as the session went on', score: Math.min(1, (valenceEnd + 1) / 2) };
+  else if (valenceShift < -0.2) metrics.valenceTrajectory = { direction: 'Dipping Down', desc: 'Your mood dropped a bit — you seemed to feel less positive toward the end', score: Math.max(0, (valenceEnd + 1) / 2) };
+  else metrics.valenceTrajectory = { direction: 'Steady', desc: `Your mood stayed ${avgValence > 0.2 ? 'mostly positive' : avgValence < -0.2 ? 'on the lower side' : 'pretty even'} throughout`, score: (avgValence + 1) / 2 };
 
   // ── 2. Arousal Arc ───────────────────────────────────
   const arousalArr = temporal.map(e => AROUSAL[e] ?? 0.3);
@@ -66,9 +66,9 @@ function computeAdvancedMetrics(results) {
     const coherence = matches / minLen;
     metrics.avCoherence = {
       score: coherence,
-      desc: coherence > 0.7 ? 'Voice and facial expressions are highly aligned — authentic emotional expression'
-           : coherence > 0.4 ? 'Moderate alignment between voice and face — possible mixed emotions'
-           : 'Low audio-visual alignment — voice and facial cues tell different stories (possible masking)'
+      desc: coherence > 0.7 ? 'Your voice and face matched well — you were expressing your feelings openly'
+           : coherence > 0.4 ? 'Your voice and face told slightly different stories — you might have been feeling mixed emotions'
+           : 'Your voice said one thing, but your face said another — you may have been holding back how you really feel'
     };
   }
 
@@ -117,15 +117,15 @@ export default function CognitiveInsights({ results }) {
     <div className="max-w-2xl mx-auto glass glow-border rounded-2xl p-6 space-y-5 animate-fade-up" style={{ animationDelay: '0.15s' }}>
       <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
         <BrainCircuit className="w-4 h-4 text-wattle" />
-        Cognitive Analysis Engine
-        <span className="text-[9px] text-text-muted font-normal ml-auto">Temporal AI</span>
+        How You're Feeling — Deep Insights
+        <span className="text-[9px] text-text-muted font-normal ml-auto">AI Analysis</span>
       </h3>
 
       {/* Core Gauges */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <ProgressGauge value={results.timeline_confidence ?? 0} label="Model Confidence" icon={Activity} color="#D5CF2F" />
-        <ProgressGauge value={results.emotional_stability ?? 0} label="Emotional Stability" icon={HeartPulse} color="#22C55E" />
-        <ProgressGauge value={1 - (results.transition_rate ?? 0)} label="Signal Consistency" icon={Shield} color="#3B82F6" />
+        <ProgressGauge value={results.timeline_confidence ?? 0} label="How Sure We Are" icon={Activity} color="#D5CF2F" />
+        <ProgressGauge value={results.emotional_stability ?? 0} label="Emotional Steadiness" icon={HeartPulse} color="#22C55E" />
+        <ProgressGauge value={1 - (results.transition_rate ?? 0)} label="Signal Clarity" icon={Shield} color="#3B82F6" />
       </div>
 
       {m && (
@@ -140,7 +140,7 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <Waves className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <div>
-                  <span className="text-[11px] text-wattle font-semibold">Valence: {m.valenceTrajectory.direction}</span>
+                  <span className="text-[11px] text-wattle font-semibold">Mood Trend: {m.valenceTrajectory.direction}</span>
                   <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5">{m.valenceTrajectory.desc}</p>
                 </div>
               </div>
@@ -151,9 +151,9 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <Zap className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <div>
-                  <span className="text-[11px] text-wattle font-semibold">Arousal Peak: {m.arousal.peakAt}</span>
+                  <span className="text-[11px] text-wattle font-semibold">Energy Level: peaked {m.arousal.peakAt}</span>
                   <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5">
-                    Peak intensity ({Math.round(m.arousal.peak * 100)}%) detected {m.arousal.peakAt} during {m.arousal.emotion} {EMOTION_EMOJI[m.arousal.emotion] || ''}. Avg arousal: {Math.round(m.arousal.avg * 100)}%.
+                    Your strongest moment ({Math.round(m.arousal.peak * 100)}% intensity) was {m.arousal.peakAt} when you felt {m.arousal.emotion} {EMOTION_EMOJI[m.arousal.emotion] || ''}. Overall energy: {Math.round(m.arousal.avg * 100)}%.
                   </p>
                 </div>
               </div>
@@ -164,7 +164,7 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <Eye className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <div>
-                  <span className="text-[11px] text-wattle font-semibold">AV Coherence: {Math.round(m.avCoherence.score * 100)}%</span>
+                  <span className="text-[11px] text-wattle font-semibold">Voice-Face Match: {Math.round(m.avCoherence.score * 100)}%</span>
                   <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5">{m.avCoherence.desc}</p>
                 </div>
               </div>
@@ -175,11 +175,11 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <Gauge className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <div>
-                  <span className="text-[11px] text-wattle font-semibold">Regulation Index: {Math.round(m.regulation.score * 100)}%</span>
+                  <span className="text-[11px] text-wattle font-semibold">Self-Control: {Math.round(m.regulation.score * 100)}%</span>
                   <p className="text-[10px] text-text-secondary leading-relaxed mt-0.5">
-                    {m.regulation.score > 0.7 ? 'Strong emotional regulation — quick recovery from high-arousal states' 
-                     : m.regulation.score > 0.4 ? 'Moderate regulation — some latency returning to baseline'
-                     : 'Low regulation — sustained high-arousal without recovery periods'}
+                    {m.regulation.score > 0.7 ? 'You bounce back quickly after emotional highs — good self-control' 
+                     : m.regulation.score > 0.4 ? 'You take a bit of time to settle down after strong emotions'
+                     : 'Strong emotions stayed with you for a while — you were really feeling things deeply'}
                   </p>
                 </div>
               </div>
@@ -194,10 +194,10 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <ArrowRight className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <p className="text-[10px] text-text-secondary leading-relaxed">
-                  <span className="text-wattle font-semibold">Emotional Arc:</span>{' '}
+                  <span className="text-wattle font-semibold">Your Journey:</span>{' '}
                   {m.journey.firstDom[0] !== m.journey.secondDom[0]
-                    ? `Transitioned from ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]] || ''} → ${m.journey.secondDom[0]} ${EMOTION_EMOJI[m.journey.secondDom[0]] || ''} across ${m.journey.transitions.length} shift${m.journey.transitions.length !== 1 ? 's' : ''} (${m.journey.uniqueEmotions} unique states)`
-                    : `Consistently ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]] || ''} with ${m.journey.uniqueEmotions} unique emotional state${m.journey.uniqueEmotions !== 1 ? 's' : ''} detected`}
+                    ? `You started out ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]] || ''} and ended up ${m.journey.secondDom[0]} ${EMOTION_EMOJI[m.journey.secondDom[0]] || ''} — your feelings shifted ${m.journey.transitions.length} time${m.journey.transitions.length !== 1 ? 's' : ''} through ${m.journey.uniqueEmotions} different emotions`
+                    : `You stayed mostly ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]] || ''} the whole time — we picked up ${m.journey.uniqueEmotions} different emotion${m.journey.uniqueEmotions !== 1 ? 's' : ''} in total`}
                 </p>
               </div>
             )}
@@ -207,8 +207,8 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-2.5">
                 <BrainCircuit className="w-3.5 h-3.5 text-wattle mt-0.5 shrink-0" />
                 <p className="text-[10px] text-text-secondary leading-relaxed">
-                  <span className="text-wattle font-semibold">Micro-expressions:</span>{' '}
-                  {m.microExpressions.count} rapid A→B→A pattern{m.microExpressions.count > 1 ? 's' : ''} detected — indicates brief involuntary emotional leakage, a signal conventional models typically miss.
+                  <span className="text-wattle font-semibold">Quick Flickers:</span>{' '}
+                  We caught {m.microExpressions.count} tiny flash{m.microExpressions.count > 1 ? 'es' : ''} where a different emotion popped up for just a split second before going back — these are quick, real feelings that most systems can't catch.
                 </p>
               </div>
             )}
