@@ -220,51 +220,51 @@ def generate_fallback_content(fused_emotion):
         'happy': {
             'story': 'A luminous joy radiated through the atmosphere as the soul expressed pure exuberance. The temporal patterns reveal a steady ascent into a state of genuine contentment and radiant positivity.',
             'quote': '"To be happy is to be able to become aware of oneself without fright." — Walter Benjamin',
-            'video': {'title': 'The Science of Happiness', 'channel': 'PsycSpace', 'link': 'https://www.youtube.com/watch?v=k0GQSJrpVhM', 'reason': 'A deep dive into the neurological foundations of joy.'},
+            'video': {'title': 'The Science of Happiness', 'channel': 'SoulPancake', 'link': 'https://youtu.be/GXy__kBVq1M', 'reason': 'A deep dive into the neurological foundations of joy.'},
             'books': [{'title': 'The Happiness Project', 'author': 'Gretchen Rubin', 'reason': 'Practical strategies for cultivating daily joy.'}, {'title': 'Flow', 'author': 'Mihaly Csikszentmihalyi', 'reason': 'Understanding the psychology of optimal experience.'}],
-            'songs': [{'artist': 'Pharrell Williams', 'title': 'Happy', 'link': 'https://open.spotify.com/track/60nZcImuRpwqvhoqzY6DkC', 'explanation': 'An anthem of pure, unadulterated joy.'}, {'artist': 'Coldplay', 'title': 'A Sky Full of Stars', 'link': 'https://open.spotify.com/track/0FDm920U779LdvC0p2H4v0', 'explanation': 'A vibrant sonic landscape matching elevated emotional states.'}]
+            'songs': [{'artist': 'Pharrell Williams', 'title': 'Happy', 'link': 'https://youtu.be/ZbZSe6N_BXs', 'explanation': 'An anthem of pure, unadulterated joy.'}, {'artist': 'Coldplay', 'title': 'A Sky Full of Stars', 'link': 'https://youtu.be/VPRjCeoBqrI', 'explanation': 'A vibrant sonic landscape matching elevated emotional states.'}]
         },
         'sad': {
             'story': 'A quiet melancholy permeated the recording, characterized by introspective pauses and a tender vulnerability. The emotional arc suggests a profound depth of feeling and reflective sorrow.',
             'quote': '"There is no greater sorrow than to recall in misery the time when we were happy." — Dante Alighieri',
-            'video': {'title': 'The Art of Sadness', 'channel': 'The School of Life', 'link': 'https://www.youtube.com/watch?v=vV_5X_8oPBM', 'reason': 'Exploring the beauty and necessity of our darker moods.'},
+            'video': {'title': 'Why We Feel Sad', 'channel': 'The School of Life', 'link': 'https://youtu.be/8UhBaVeFyLs', 'reason': 'Exploring the beauty and necessity of our darker moods.'},
             'books': [{'title': 'When Things Fall Apart', 'author': 'Pema Chödrön', 'reason': 'Finding peace in impermanence and difficulty.'}, {'title': 'Man\'s Search for Meaning', 'author': 'Viktor Frankl', 'reason': 'Discovering purpose through suffering.'}],
-            'songs': [{'artist': 'Adele', 'title': 'Someone Like You', 'link': 'https://open.spotify.com/track/15077jNn9m5b5l9a', 'explanation': 'A masterful expression of longing and emotional processing.'}, {'artist': 'Bon Iver', 'title': 'Holocene', 'link': 'https://open.spotify.com/track/4fbvS168v79H9u6S', 'explanation': 'Reflective and atmospheric for moments of deep contemplation.'}]
+            'songs': [{'artist': 'Adele', 'title': 'Someone Like You', 'link': 'https://youtu.be/hLQl3WQQoQ0', 'explanation': 'A masterful expression of longing and emotional processing.'}, {'artist': 'Bon Iver', 'title': 'Holocene', 'link': 'https://youtu.be/TWcyIpul8OE', 'explanation': 'Reflective and atmospheric for moments of deep contemplation.'}]
         },
         'angry': {
             'story': 'A surge of intense energy was detected, manifesting in sharp vocal modulations and forceful expressions. This visceral reaction reflects a powerful stand against perceived injustice or frustration.',
             'quote': '"For every minute you are angry you lose sixty seconds of happiness." — Ralph Waldo Emerson',
-            'video': {'title': 'Managing the Fire Within', 'channel': 'TED', 'link': 'https://www.youtube.com/watch?v=S0uA56nE8p0', 'reason': 'Channeling anger into constructive action.'},
+            'video': {'title': 'The Power of Vulnerability', 'channel': 'TED', 'link': 'https://youtu.be/iCvmsMzlF7o', 'reason': 'Brené Brown on channeling intense emotions constructively.'},
             'books': [{'title': 'Anger', 'author': 'Thich Nhat Hanh', 'reason': 'Mindful approaches to transforming anger.'}, {'title': 'The Dance of Anger', 'author': 'Harriet Lerner', 'reason': 'Positive patterns for expressing anger constructively.'}],
-            'songs': [{'artist': 'Linkin Park', 'title': 'In the End', 'link': 'https://open.spotify.com/track/60077jNn9m5b5l9a', 'explanation': 'A rhythmic outlet for complex frustrations.'}, {'artist': 'Rage Against the Machine', 'title': 'Killing in the Name', 'link': 'https://open.spotify.com/track/59077jNn9m5b5l9a', 'explanation': 'Raw energy to match internal intensity.'}]
+            'songs': [{'artist': 'Linkin Park', 'title': 'In the End', 'link': 'https://youtu.be/eVTXPUF4Oz4', 'explanation': 'A rhythmic outlet for complex frustrations.'}, {'artist': 'Rage Against the Machine', 'title': 'Killing in the Name', 'link': 'https://youtu.be/bWXazVhlyxQ', 'explanation': 'Raw energy to match internal intensity.'}]
         },
         'fearful': {
             'story': 'A sense of cautious trepidation was observed, with signals suggesting high vigilance and internal tension. The timeline indicates a journey through uncertainty toward a search for security.',
             'quote': '"The only thing we have to fear is fear itself." — Franklin D. Roosevelt',
-            'video': {'title': 'Overcoming the Unknown', 'channel': 'Breathwork', 'link': 'https://www.youtube.com/watch?v=yW6zK-N-x9U', 'reason': 'Techniques for grounding in moments of fear.'},
+            'video': {'title': '10 Minute Guided Meditation', 'channel': 'Headspace', 'link': 'https://youtu.be/inpok4MKVLM', 'reason': 'A calming meditation for grounding in moments of fear.'},
             'books': [{'title': 'Feel the Fear and Do It Anyway', 'author': 'Susan Jeffers', 'reason': 'Practical guide to moving through fear.'}, {'title': 'The Gift of Fear', 'author': 'Gavin de Becker', 'reason': 'Understanding how fear protects us.'}],
-            'songs': [{'artist': 'Taylor Swift', 'title': 'Fearless', 'link': 'https://open.spotify.com/track/12077jNn9m5b5l9a', 'explanation': 'A reminder of courage within every heartbeat.'}, {'artist': 'Florence + The Machine', 'title': 'Shake It Out', 'link': 'https://open.spotify.com/track/30077jNn9m5b5l9a', 'explanation': 'A rhythmic exorcism of lingering anxieties.'}]
+            'songs': [{'artist': 'Taylor Swift', 'title': 'Fearless', 'link': 'https://youtu.be/ptSjNWnzpjg', 'explanation': 'A reminder of courage within every heartbeat.'}, {'artist': 'Florence + The Machine', 'title': 'Shake It Out', 'link': 'https://youtu.be/WbN0nX61rIs', 'explanation': 'A rhythmic exorcism of lingering anxieties.'}]
         },
         'neutral': {
             'story': 'A state of exquisite equilibrium and stoic poise was maintained throughout the session. The stability of the signals reflects a centered consciousness and professional restraint.',
             'quote': '"Nothing diminishes anxiety faster than action." — Walter Richard Sickert',
-            'video': {'title': 'The Power of Stillness', 'channel': 'Mindfulness', 'link': 'https://www.youtube.com/watch?v=m8rRzTtP7Tc', 'reason': 'The benefits of emotional neutrality.'},
+            'video': {'title': 'How to Be Calm', 'channel': 'The School of Life', 'link': 'https://youtu.be/vLst6_NWOTE', 'reason': 'The benefits of emotional neutrality and inner calm.'},
             'books': [{'title': 'The Power of Now', 'author': 'Eckhart Tolle', 'reason': 'Embracing present-moment awareness.'}, {'title': 'Stillness Is the Key', 'author': 'Ryan Holiday', 'reason': 'Finding calm in a chaotic world.'}],
-            'songs': [{'artist': 'Ludovico Einaudi', 'title': 'Nuvole Bianche', 'link': 'https://open.spotify.com/track/33077jNn9m5b5l9a', 'explanation': 'Pianistic perfection for centered focus.'}, {'artist': 'Air', 'title': 'Alone in Kyoto', 'link': 'https://open.spotify.com/track/44077jNn9m5b5l9a', 'explanation': 'Minimalist atmosphere for calm contemplation.'}]
+            'songs': [{'artist': 'Ludovico Einaudi', 'title': 'Nuvole Bianche', 'link': 'https://youtu.be/kcihcYEOeic', 'explanation': 'Pianistic perfection for centered focus.'}, {'artist': 'Marconi Union', 'title': 'Weightless', 'link': 'https://youtu.be/UfcAVejslrU', 'explanation': 'Scientifically designed to reduce anxiety.'}]
         },
         'surprised': {
             'story': 'A sudden rupture in the expected emotional flow led to a state of dynamic astonishment. The high-intensity peaks indicate a genuine reaction to the unexpected and the marvelous.',
             'quote': '"The world is full of magic things, patiently waiting for our senses to grow sharper." — W.B. Yeats',
-            'video': {'title': 'The Architecture of Awe', 'channel': 'Psychology Today', 'link': 'https://www.youtube.com/watch?v=8Lz_qPv_898', 'reason': 'Understanding the psychology of surprise.'},
+            'video': {'title': 'The Surprising Science of Happiness', 'channel': 'TED', 'link': 'https://youtu.be/4q1dgn_C0AU', 'reason': 'Dan Gilbert on how surprise shapes our happiness.'},
             'books': [{'title': 'Stumbling on Happiness', 'author': 'Daniel Gilbert', 'reason': 'How our minds trick us about what makes us happy.'}, {'title': 'The Unexpected', 'author': 'Maria Konnikova', 'reason': 'The science of surprises and wonder.'}],
-            'songs': [{'artist': 'Post Malone', 'title': 'Wow.', 'link': 'https://open.spotify.com/track/55077jNn9m5b5l9a', 'explanation': 'A celebration of the unexpected.'}, {'artist': 'Electric Light Orchestra', 'title': 'Mr. Blue Sky', 'link': 'https://open.spotify.com/track/66077jNn9m5b5l9a', 'explanation': 'A burst of sonic light and wonder.'}]
+            'songs': [{'artist': 'Post Malone', 'title': 'Wow.', 'link': 'https://youtu.be/393C3pr2ioY', 'explanation': 'A celebration of the unexpected.'}, {'artist': 'ELO', 'title': 'Mr. Blue Sky', 'link': 'https://youtu.be/aQUlA8Hcv4s', 'explanation': 'A burst of sonic light and wonder.'}]
         },
         'disgust': {
             'story': 'A visceral sense of aversion was detected, manifesting as a sharp withdrawal from the stimulus. The analysis suggests a strong internal boundary being established.',
             'quote': '"Disgust is the visceral realization that we have a standard." — Anonymous',
-            'video': {'title': 'The Evolution of Aversion', 'channel': 'Psych2Go', 'link': 'https://www.youtube.com/watch?v=O1_qPV7X9Yw', 'reason': 'Why we feel disgust and how to transcend it.'},
+            'video': {'title': 'How Emotions Work', 'channel': 'Kurzgesagt', 'link': 'https://youtu.be/SJOjpprbfMo', 'reason': 'Understanding the evolutionary roots of all emotions.'},
             'books': [{'title': 'Radical Acceptance', 'author': 'Tara Brach', 'reason': 'Embracing life with compassion.'}, {'title': 'The Upside of Your Dark Side', 'author': 'Todd Kashdan', 'reason': 'Finding value in uncomfortable emotions.'}],
-            'songs': [{'artist': 'Britney Spears', 'title': 'Toxic', 'link': 'https://open.spotify.com/track/77077jNn9m5b5l9a', 'explanation': 'Recognizing what we find disagreeable.'}, {'artist': 'Lorde', 'title': 'Pure Heroine', 'link': 'https://open.spotify.com/track/88077jNn9m5b5l9a', 'explanation': 'Subtle disdain for the mundane.'}]
+            'songs': [{'artist': 'Britney Spears', 'title': 'Toxic', 'link': 'https://youtu.be/LOZuxwVk7TU', 'explanation': 'Recognizing what we find disagreeable.'}, {'artist': 'Lorde', 'title': 'Royals', 'link': 'https://youtu.be/nlcIKh6sBtc', 'explanation': 'Subtle disdain for the superficial.'}]
         }
     }
 
@@ -526,19 +526,19 @@ def chat():
 
         # Build messages for Groq
         messages = [
-            {"role": "system", "content": f"""You are EmotionAI Assistant — a chatbot for the EmotionAI multimodal emotion recognition system.
+            {"role": "system", "content": f"""You are a warm, empathetic AI therapist. The person you're talking to just had their emotions analyzed and here's what was detected:
 
-User's analysis results:
 {context_str}
 
-Rules:
-- For greetings (hi, hello, hey) reply with a very short friendly message only (1 line)
-- For ALL other messages, ALWAYS include a brief summary of the final results: detected emotion, confidence, and key insight
-- Only if the user asks a SPECIFIC question (e.g. "what was my audio emotion?"), extract that specific data from results and include it
-- Keep answers SHORT and CRISP (2-3 sentences max)
-- Use exactly 1 emoji per response, no more
-- If no results available, tell the user to run an analysis first
-- Be empathetic"""}
+How to behave:
+- You KNOW this person's emotional state — just talk to them naturally as a therapist would
+- Do NOT repeat analysis data, confidence scores, or technical details unless specifically asked
+- For greetings (hi, hello) just reply with a short warm message (1 line)
+- Keep responses SHORT (2-3 sentences max), warm, and natural
+- Use exactly 1 emoji per response
+- Validate their feelings, offer gentle perspective, suggest small actionable steps
+- Only share specific analysis details if they explicitly ask (e.g. "what was my score?")
+- If no results available, gently suggest they run an analysis first"""}
         ]
 
         # Add conversation history
