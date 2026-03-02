@@ -25,27 +25,24 @@ export default function ProcessingLoader({ progress, status }) {
   return (
     <div className="w-full max-w-2xl mx-auto animate-fade-up mt-6">
       <div className="glass glow-border rounded-2xl p-6 space-y-4">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Loader2 className="w-5 h-5 text-rajah animate-spin" />
+            <Loader2 className="w-5 h-5 text-wattle animate-spin" />
             <span className="text-sm font-medium text-text-secondary">{displayStatus}</span>
           </div>
-          <span className="text-2xl font-bold text-rajah tabular-nums">{Math.round(progress)}%</span>
+          <span className="text-2xl font-bold text-wattle tabular-nums">{Math.round(progress)}%</span>
         </div>
 
-        {/* Progress bar */}
         <div className="relative">
-          <div className="h-3 rounded-full bg-bluewood-dark overflow-hidden">
+          <div className="h-3 rounded-full bg-cherry-dark overflow-hidden">
             <div
-              className="progress-bar-fill h-full rounded-full bg-gradient-to-r from-rajah-dark via-rajah to-rajah-light relative"
+              className="progress-bar-fill h-full rounded-full bg-gradient-to-r from-wattle-dark via-wattle to-wattle-light relative"
               style={{ width: `${progress}%` }}
             >
               <div className="absolute inset-0 animate-shimmer rounded-full" />
             </div>
           </div>
 
-          {/* Section markers */}
           <div className="flex justify-between mt-2.5 px-0.5">
             {[
               { pct: 10, label: 'Extract' },
@@ -57,11 +54,11 @@ export default function ProcessingLoader({ progress, status }) {
               <div key={m.pct} className="flex flex-col items-center">
                 <div
                   className="w-1.5 h-1.5 rounded-full mb-1 transition-colors duration-500"
-                  style={{ backgroundColor: progress >= m.pct ? '#FBB06E' : 'rgba(100,116,139,0.3)' }}
+                  style={{ backgroundColor: progress >= m.pct ? '#D5CF2F' : 'rgba(138,102,112,0.3)' }}
                 />
                 <span
                   className="text-[10px] font-medium transition-colors duration-500"
-                  style={{ color: progress >= m.pct ? '#FBB06E' : 'rgba(100,116,139,0.5)' }}
+                  style={{ color: progress >= m.pct ? '#D5CF2F' : 'rgba(138,102,112,0.5)' }}
                 >
                   {m.label}
                 </span>
@@ -70,7 +67,6 @@ export default function ProcessingLoader({ progress, status }) {
           </div>
         </div>
 
-        {/* Current section */}
         <p className="text-center text-xs text-text-muted">
           Stage: <span className="text-text-secondary font-medium">{sectionLabel}</span>
         </p>

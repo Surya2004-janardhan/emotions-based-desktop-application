@@ -6,35 +6,29 @@
 
 /* ── Theme tokens ─────────────────────────────────────────── */
 @theme {
-  --color-bluewood: #2D3A56;
-  --color-bluewood-light: #3d4e6e;
-  --color-bluewood-dark: #1e2840;
-  --color-rajah: #FBB06E;
-  --color-rajah-light: #fcc48f;
-  --color-rajah-dark: #e89845;
-  --color-surface: #1a2237;
-  --color-surface-light: #243050;
+  --color-cherry: #5E1525;
+  --color-cherry-light: #7a2a3d;
+  --color-cherry-dark: #3d0e18;
+  --color-wattle: #D5CF2F;
+  --color-wattle-light: #e0db5e;
+  --color-wattle-dark: #b5b020;
+  --color-surface: #2a0f16;
+  --color-surface-light: #4a1a2d;
   --color-text-primary: #f1f5f9;
-  --color-text-secondary: #94a3b8;
-  --color-text-muted: #64748b;
+  --color-text-secondary: #c4a8b0;
+  --color-text-muted: #8a6670;
   /* emotion colours */
   --color-em-happy: #22C55E;
   --color-em-sad: #3B82F6;
   --color-em-angry: #EF4444;
   --color-em-fearful: #A855F7;
-  --color-em-neutral: #94a3b8;
+  --color-em-neutral: #c4a8b0;
   --color-em-surprised: #F59E0B;
   --color-em-disgust: #84CC16;
 }
 
 /* ── Base ──────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* Tailwind v4 includes its own preflight — no manual reset needed */
 
 html {
   scroll-behavior: smooth;
@@ -42,7 +36,7 @@ html {
 
 body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #0f1626 0%, #1e2840 50%, #0f1626 100%);
+  background: linear-gradient(135deg, #1a0810 0%, #3d0e18 50%, #1a0810 100%);
   color: #f1f5f9;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -50,16 +44,16 @@ body {
 
 /* ── Glass card utility ───────────────────────────────────── */
 .glass {
-  background: rgba(45, 58, 86, 0.65);
+  background: rgba(94, 21, 37, 0.55);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border: 1px solid rgba(251, 176, 110, 0.15);
+  border: 1px solid rgba(213, 207, 47, 0.12);
   border-radius: 1rem;
 }
 
 .glow-border {
-  box-shadow: 0 0 0 1px rgba(251, 176, 110, 0.1),
-              0 8px 32px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 0 0 1px rgba(213, 207, 47, 0.08),
+              0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Animations ───────────────────────────────────────────── */
@@ -98,7 +92,7 @@ body {
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 30%, rgba(251,176,110,0.08) 50%, transparent 70%);
+  background: linear-gradient(90deg, transparent 30%, rgba(213,207,47,0.08) 50%, transparent 70%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
 }
@@ -117,7 +111,7 @@ body {
 /* ── Scrollbar ────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3d4e6e; border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: #7a2a3d; border-radius: 3px; }
 
 /* ── Progress bar animation ───────────────────────────────── */
 .progress-bar-fill {

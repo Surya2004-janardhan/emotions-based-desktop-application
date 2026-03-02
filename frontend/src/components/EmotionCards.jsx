@@ -5,7 +5,7 @@ const EMOTION_CONFIG = {
   sad:       { color: '#3B82F6', emoji: '😢' },
   angry:     { color: '#EF4444', emoji: '😠' },
   fearful:   { color: '#A855F7', emoji: '😨' },
-  neutral:   { color: '#94a3b8', emoji: '😐' },
+  neutral:   { color: '#c4a8b0', emoji: '😐' },
   surprised: { color: '#F59E0B', emoji: '😲' },
   disgust:   { color: '#84CC16', emoji: '🤢' },
 };
@@ -29,7 +29,6 @@ function Card({ icon: Icon, label, emotion, sublabel, delay }) {
       {sublabel && (
         <span className="text-[11px] text-text-muted">{sublabel}</span>
       )}
-      {/* Color dot accent */}
       <div
         className="w-8 h-1 rounded-full mt-1"
         style={{ backgroundColor: cfg.color, opacity: 0.5 }}
@@ -40,30 +39,11 @@ function Card({ icon: Icon, label, emotion, sublabel, delay }) {
 
 export default function EmotionCards({ results }) {
   if (!results) return null;
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto stagger">
-      <Card
-        icon={Mic}
-        label="Audio"
-        emotion={results.audio_emotion || 'neutral'}
-        sublabel="Voice analysis"
-        delay={0.05}
-      />
-      <Card
-        icon={MonitorPlay}
-        label="Video"
-        emotion={results.video_emotion || 'neutral'}
-        sublabel="Facial expression"
-        delay={0.12}
-      />
-      <Card
-        icon={Zap}
-        label="Fused"
-        emotion={results.fused_emotion || 'neutral'}
-        sublabel="Combined result"
-        delay={0.19}
-      />
+      <Card icon={Mic} label="Audio" emotion={results.audio_emotion || 'neutral'} sublabel="Voice analysis" delay={0.05} />
+      <Card icon={MonitorPlay} label="Video" emotion={results.video_emotion || 'neutral'} sublabel="Facial expression" delay={0.12} />
+      <Card icon={Zap} label="Fused" emotion={results.fused_emotion || 'neutral'} sublabel="Combined result" delay={0.19} />
     </div>
   );
 }

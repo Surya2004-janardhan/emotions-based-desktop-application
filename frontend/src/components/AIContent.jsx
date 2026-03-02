@@ -2,22 +2,19 @@ import { Sparkles, BookOpen, Quote, Youtube, Music } from 'lucide-react';
 
 export default function AIContent({ results }) {
   if (!results) return null;
-
   const { story, quote, video, songs } = results;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 animate-fade-up" style={{ animationDelay: '0.25s' }}>
-      {/* Section title */}
       <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-rajah" />
+        <Sparkles className="w-4 h-4 text-wattle" />
         AI Recommendations Engine
       </h3>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Story Card */}
         {story && (
           <div className="glass glow-border rounded-2xl p-5 space-y-3">
-            <div className="flex items-center gap-2 text-rajah">
+            <div className="flex items-center gap-2 text-wattle">
               <BookOpen className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">Your Story</span>
             </div>
@@ -25,20 +22,18 @@ export default function AIContent({ results }) {
           </div>
         )}
 
-        {/* Quote Card */}
         {quote && (
           <div className="glass glow-border rounded-2xl p-5 space-y-3 flex flex-col justify-center">
-            <Quote className="w-6 h-6 text-rajah/40" />
-            <blockquote className="text-sm text-text-primary italic leading-relaxed border-l-2 border-rajah/30 pl-3">
+            <Quote className="w-6 h-6 text-wattle/40" />
+            <blockquote className="text-sm text-text-primary italic leading-relaxed pl-3" style={{ borderLeft: '2px solid rgba(213,207,47,0.25)' }}>
               {quote}
             </blockquote>
           </div>
         )}
 
-        {/* Video Recommendation */}
         {video && (
           <div className="glass glow-border rounded-2xl p-5 space-y-3">
-            <div className="flex items-center gap-2 text-rajah">
+            <div className="flex items-center gap-2 text-wattle">
               <Youtube className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">Watch This</span>
             </div>
@@ -47,7 +42,7 @@ export default function AIContent({ results }) {
                 href={video.match(/https?:\/\/[^\s"]+/)?.[0] || '#'}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-rajah-light hover:text-rajah transition-colors underline underline-offset-2 break-all"
+                className="text-sm text-wattle-light hover:text-wattle transition-colors underline underline-offset-2 break-all"
               >
                 {video}
               </a>
@@ -57,10 +52,9 @@ export default function AIContent({ results }) {
           </div>
         )}
 
-        {/* Songs */}
         {songs && songs.length > 0 && (
           <div className="glass glow-border rounded-2xl p-5 space-y-3">
-            <div className="flex items-center gap-2 text-rajah">
+            <div className="flex items-center gap-2 text-wattle">
               <Music className="w-4 h-4" />
               <span className="text-xs font-semibold uppercase tracking-wider">Playlist</span>
             </div>
@@ -73,16 +67,9 @@ export default function AIContent({ results }) {
                       {song.title || 'Unknown'}{' '}
                       <span className="text-text-muted font-normal">— {song.artist || 'Unknown'}</span>
                     </p>
-                    {song.explanation && (
-                      <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{song.explanation}</p>
-                    )}
+                    {song.explanation && <p className="text-xs text-text-muted mt-0.5 line-clamp-2">{song.explanation}</p>}
                     {song.link && (
-                      <a
-                        href={song.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-rajah/70 hover:text-rajah transition-colors"
-                      >
+                      <a href={song.link} target="_blank" rel="noopener noreferrer" className="text-[11px] text-wattle/70 hover:text-wattle transition-colors">
                         Listen →
                       </a>
                     )}

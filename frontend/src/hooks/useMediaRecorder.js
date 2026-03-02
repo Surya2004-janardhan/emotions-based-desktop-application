@@ -12,6 +12,7 @@ export default function useMediaRecorder() {
 
   const requestPermission = useCallback(async () => {
     try {
+      // Request BOTH video and audio in a single stream for mirror + recording
       const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setStream(s);
       setHasPermission(true);
@@ -31,6 +32,9 @@ export default function useMediaRecorder() {
       stream.getTracks().forEach(t => t.stop());
       setStream(null);
       setHasPermission(false);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
   }, [stream]);
 
@@ -42,7 +46,9 @@ export default function useMediaRecorder() {
     }
 
     chunksRef.current = [];
-    const recorder = new MediaRecorder(s, { mimeType: 'video/webm' });
+
+    // Record from the combined video+audio stream
+    const recorder = new MediaRecorder(s, { mimeType: 'video/webm;codecs=vp8,opus' });
 
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -59,7 +65,7 @@ export default function useMediaRecorder() {
       };
 
       mediaRecorderRef.current = recorder;
-      recorder.start();
+      recorder.start(100); // collect data every 100ms for reliability
       setIsRecording(true);
       setCountdown(11);
 

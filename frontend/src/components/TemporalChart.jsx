@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -16,7 +15,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const EMOTIONS = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgust', 'surprised'];
 const EMOTION_COLORS = {
-  neutral:   '#94a3b8',
+  neutral:   '#c4a8b0',
   happy:     '#22C55E',
   sad:       '#3B82F6',
   angry:     '#EF4444',
@@ -25,8 +24,7 @@ const EMOTION_COLORS = {
   surprised: '#F59E0B',
 };
 
-function buildTimelineDataset(temporal, label) {
-  // Convert temporal emotion names to per-emotion binary series
+function buildTimelineDataset(temporal) {
   const labels = temporal.map((_, i) => `${i + 1}`);
   const datasets = EMOTIONS.map((em) => ({
     label: em.charAt(0).toUpperCase() + em.slice(1),
@@ -39,7 +37,6 @@ function buildTimelineDataset(temporal, label) {
     tension: 0.35,
     fill: false,
   }));
-
   return { labels, datasets };
 }
 
@@ -50,7 +47,7 @@ const chartOptions = (title) => ({
     legend: {
       position: 'bottom',
       labels: {
-        color: '#94a3b8',
+        color: '#c4a8b0',
         font: { family: 'Inter', size: 11 },
         boxWidth: 10,
         padding: 12,
@@ -64,8 +61,8 @@ const chartOptions = (title) => ({
       padding: { bottom: 12 },
     },
     tooltip: {
-      backgroundColor: '#2D3A56',
-      borderColor: 'rgba(251,176,110,0.25)',
+      backgroundColor: '#5E1525',
+      borderColor: 'rgba(213,207,47,0.25)',
       borderWidth: 1,
       titleFont: { family: 'Inter' },
       bodyFont: { family: 'Inter' },
@@ -73,53 +70,42 @@ const chartOptions = (title) => ({
   },
   scales: {
     x: {
-      ticks: { color: '#64748b', font: { size: 10 } },
-      grid: { color: 'rgba(100,116,139,0.1)' },
-      title: { display: true, text: 'Time Segment', color: '#64748b', font: { size: 10 } },
+      ticks: { color: '#8a6670', font: { size: 10 } },
+      grid: { color: 'rgba(138,102,112,0.1)' },
+      title: { display: true, text: 'Time Segment', color: '#8a6670', font: { size: 10 } },
     },
     y: {
       min: -0.1,
       max: 1.1,
       ticks: {
-        color: '#64748b',
+        color: '#8a6670',
         font: { size: 10 },
         callback: (v) => (v === 0 ? '' : v === 1 ? 'Active' : ''),
       },
-      grid: { color: 'rgba(100,116,139,0.08)' },
+      grid: { color: 'rgba(138,102,112,0.08)' },
     },
   },
 });
 
 export default function TemporalChart({ results }) {
   if (!results) return null;
-
   const audioTemporal = results.audio_temporal || [];
   const videoTemporal = results.video_temporal || [];
-
   if (audioTemporal.length === 0 && videoTemporal.length === 0) return null;
 
   return (
     <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 animate-fade-up" style={{ animationDelay: '0.2s' }}>
-      {/* Audio Timeline */}
       {audioTemporal.length > 0 && (
         <div className="glass glow-border rounded-2xl p-5">
           <div className="h-64">
-            <Line
-              data={buildTimelineDataset(audioTemporal, 'Audio')}
-              options={chartOptions('Audio Temporal Emotions')}
-            />
+            <Line data={buildTimelineDataset(audioTemporal)} options={chartOptions('Audio Temporal Emotions')} />
           </div>
         </div>
       )}
-
-      {/* Video Timeline */}
       {videoTemporal.length > 0 && (
         <div className="glass glow-border rounded-2xl p-5">
           <div className="h-64">
-            <Line
-              data={buildTimelineDataset(videoTemporal, 'Video')}
-              options={chartOptions('Video Temporal Emotions')}
-            />
+            <Line data={buildTimelineDataset(videoTemporal)} options={chartOptions('Video Temporal Emotions')} />
           </div>
         </div>
       )}
