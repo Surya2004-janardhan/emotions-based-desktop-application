@@ -33,7 +33,7 @@ except Exception as e:
 # below trying to set env of groq
 # GROQ_API_KEY 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-print("Groq client initialized", os.getenv("GROQ_API_KEY"))
+# print("Groq client initialized", os.getenv("GROQ_API_KEY"))
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 # Audio processing parameters
