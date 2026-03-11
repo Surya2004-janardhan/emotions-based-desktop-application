@@ -25,6 +25,27 @@ const EMOTION_COLORS = {
   surprised: '#FB923C',
 };
 
+const EMOTION_LABELS = {
+  neutral:   'Normal',
+  happy:     'Vibrant',
+  sad:       'Mellow',
+  angry:     'Intense',
+  fearful:   'Alert',
+  disgust:   'Averse',
+  surprised: 'Novel',
+};
+
+function LegendItem({ emotion, color }) {
+  return (
+    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-surface-raised border border-border-subtle hover:border-primary/30 transition-all">
+      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+      <span className="text-[10px] font-bold text-text-secondary uppercase tracking-tight">
+        {EMOTION_LABELS[emotion]}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Build dataset from probability arrays (smooth curves).
  */
@@ -35,10 +56,10 @@ function buildProbDataset(probs) {
     data: probs.map((p) => p[idx]),
     borderColor: EMOTION_COLORS[em],
     backgroundColor: EMOTION_COLORS[em] + '10',
-    borderWidth: 3,
+    borderWidth: 2.5,
     pointRadius: 0,
-    pointHoverRadius: 5,
-    tension: 0.35,
+    pointHoverRadius: 4,
+    tension: 0.4,
     fill: true,
     spanGaps: true,
   }));
@@ -55,9 +76,9 @@ function buildNameDataset(temporal) {
     data: temporal.map((t) => (t === em ? 1 : 0)),
     borderColor: EMOTION_COLORS[em],
     backgroundColor: EMOTION_COLORS[em] + '20',
-    borderWidth: 2.5,
+    borderWidth: 2,
     pointRadius: 0,
-    tension: 0.2,
+    tension: 0.1,
     fill: true,
   }));
   return { labels, datasets };
@@ -69,19 +90,10 @@ function buildNameDataset(temporal) {
 const chartOptions = (hasProbs) => ({
   responsive: true,
   maintainAspectRatio: false,
+  animation: { duration: 1500, easing: 'easeOutQuart' },
   interaction: { mode: 'index', intersect: false },
   plugins: {
-    legend: {
-      position: 'top',
-      labels: {
-        boxWidth: 8,
-        usePointStyle: true,
-        pointStyle: 'circle',
-        font: { size: 10, weight: 'bold' },
-        color: 'var(--color-text-muted)',
-        padding: 15
-      }
-    },
+    legend: { display: false },
     tooltip: {
       backgroundColor: 'rgba(15, 23, 42, 0.95)',
       padding: 12,
@@ -98,18 +110,36 @@ const chartOptions = (hasProbs) => ({
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: 'var(--color-text-muted)', font: { size: 10 } },
-      title: { display: true, text: 'Time (Seconds)', color: 'var(--color-text-muted)', font: { size: 9, weight: 'bold' } }
+      ticks: { 
+        color: '#FFFFFF', // Pure White for maximum contrast
+        font: { size: 10, weight: '700' },
+        padding: 8
+      },
+      title: { 
+        display: true, 
+        text: 'TIMELINE (S)', 
+        color: '#6499E9', // Bright Azure
+        font: { size: 10, weight: '900' },
+        padding: { top: 6 },
+        textStrokeWidth: 0.5,
+        textStrokeColor: '#FFFFFF10'
+      }
     },
     y: {
-      min: -0.05,
+      min: -0.02,
       max: 1.05,
-      grace: '5%',
-      grid: { color: 'rgba(255,255,255,0.03)' },
-      title: { display: true, text: 'Probability (%)', color: 'var(--color-text-muted)', font: { size: 9, weight: 'bold' } },
+      grid: { color: 'rgba(255, 255, 255, 0.05)' },
+      title: { 
+        display: true, 
+        text: 'PROBABILITY (%)', 
+        color: '#6499E9', 
+        font: { size: 10, weight: '900' },
+        padding: { bottom: 10 }
+      },
       ticks: { 
-        color: 'var(--color-text-muted)', 
-        font: { size: 10 },
+        color: '#FFFFFF', // Pure White
+        font: { size: 10, weight: '700' },
+        padding: 10,
         callback: (v) => (v >= 0 && v <= 1 && hasProbs) ? `${Math.round(v * 100)}%` : ''
       }
     }
@@ -132,19 +162,24 @@ export default function TemporalChart({ results }) {
   if (!hasAudio && !hasVideo) return null;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-4 animate-fade-up">
-      <div className="flex items-center gap-3 px-2">
-        <Activity className="w-4 h-4 text-primary" />
-        <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">
+    <div className="max-w-6xl mx-auto space-y-8 animate-fade-up px-4">
+      <div className="flex items-center gap-3">
+        <Activity className="w-5 h-5 text-primary" />
+        <h3 className="text-sm font-black text-text-primary uppercase tracking-[0.2em]">
            Temporal Distribution Engine
         </h3>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {hasAudio && (
-          <div className="panel p-6 bg-surface-base">
-            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-6 text-center">Audio Modality Engine</h4>
-            <div className="h-64">
+          <div className="panel p-8 bg-surface-base flex flex-col">
+            <div className="flex flex-col items-center mb-8">
+               <h4 className="text-[11px] font-black text-text-primary uppercase tracking-[0.15em] mb-4">Audio Modality Engine</h4>
+               <div className="flex flex-wrap justify-center gap-2 max-w-sm">
+                 {EMOTIONS.map(em => <LegendItem key={em} emotion={em} color={EMOTION_COLORS[em]} />)}
+               </div>
+            </div>
+            <div className="h-[320px] w-full mt-auto">
               <Line
                 data={hasAudioProbs ? buildProbDataset(audioProbs) : buildNameDataset(audioNames)}
                 options={chartOptions(hasAudioProbs)}
@@ -153,9 +188,14 @@ export default function TemporalChart({ results }) {
           </div>
         )}
         {hasVideo && (
-          <div className="panel p-6 bg-surface-base">
-            <h4 className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-6 text-center">Video Modality Engine</h4>
-            <div className="h-64">
+          <div className="panel p-8 bg-surface-base flex flex-col">
+            <div className="flex flex-col items-center mb-8">
+               <h4 className="text-[11px] font-black text-text-primary uppercase tracking-[0.15em] mb-4">Video Modality Engine</h4>
+               <div className="flex flex-wrap justify-center gap-2 max-w-sm">
+                 {EMOTIONS.map(em => <LegendItem key={em} emotion={em} color={EMOTION_COLORS[em]} />)}
+               </div>
+            </div>
+            <div className="h-[320px] w-full mt-auto">
               <Line
                 data={hasVideoProbs ? buildProbDataset(videoProbs) : buildNameDataset(videoNames)}
                 options={chartOptions(hasVideoProbs)}
