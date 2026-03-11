@@ -208,14 +208,26 @@ You MUST return a valid JSON object with the following structure:
   ],
   "songs": [
     {{
-      "artist": "Artist Name",
-      "title": "Song Title",
+      "artist": "Artist 1",
+      "title": "Song 1",
       "explanation": "Why it matches the neural arc."
+    }},
+    {{
+      "artist": "Artist 2",
+      "title": "Song 2",
+      "explanation": "Second layer of resonance."
+    }},
+    {{
+      "artist": "Artist 3",
+      "title": "Song 3",
+      "explanation": "Core emotional grounding."
     }}
   ]
 }}
 
-Ensure the story is EXACTLY 100-110 words. Every word counts. Focus on empathy and metaphors. 
+Ensure the story is EXACTLY 100-110 words. Every word counts. 
+You MUST provide EXACTLY 3 song recommendations. 
+Focus on empathy and metaphors. 
 Return ONLY the JSON object.
 """
     try:
@@ -268,49 +280,77 @@ def generate_fallback_content(fused_emotion):
             'quote': '"To be happy is to be able to become aware of oneself without fright." — Walter Benjamin',
             'video': {'title': 'The Science of Happiness', 'channel': 'SoulPancake', 'link': 'https://youtu.be/GXy__kBVq1M', 'reason': 'A deep dive into the neurological foundations of joy.'},
             'books': [{'title': 'The Happiness Project', 'author': 'Gretchen Rubin', 'reason': 'Practical strategies for cultivating daily joy.', 'purchase_link': 'https://www.google.com/search?q=The+Happiness+Project+Gretchen+Rubin+buy'}, {'title': 'Flow', 'author': 'Mihaly Csikszentmihalyi', 'reason': 'Understanding the psychology of optimal experience.', 'purchase_link': 'https://www.google.com/search?q=Flow+Mihaly+Csikszentmihalyi+buy'}],
-            'songs': [{'artist': 'Pharrell Williams', 'title': 'Happy', 'explanation': 'An anthem of pure, unadulterated joy.'}, {'artist': 'Coldplay', 'title': 'A Sky Full of Stars', 'explanation': 'A vibrant sonic landscape matching elevated emotional states.'}]
+            'songs': [
+                {'artist': 'Pharrell Williams', 'title': 'Happy', 'explanation': 'An anthem of pure, unadulterated joy.'},
+                {'artist': 'Coldplay', 'title': 'A Sky Full of Stars', 'explanation': 'A vibrant sonic landscape matching elevated emotional states.'},
+                {'artist': 'Katrina & The Waves', 'title': 'Walking on Sunshine', 'explanation': 'Radiant rhythmic energy to reinforce positive momentum.'}
+            ]
         },
         'sad': {
             'story': 'A soft rain falls upon the garden of your mind, nourishing the seeds of a deeper wisdom that only growth through stillness can bring. There is a quiet strength in this pause, a gentle invitation to simply be without the need for constant movement or noise. You are navigating a vast and winding landscape, where every turn offers a moment of reflection and a chance to rediscover your own resilient spirit. Like the moon pulling the tides, your current path is part of a grander cycle, one that promises a slow and steady return to the warmth of the sun eventually. Trust in your own inner depth and the power.',
             'quote': '"There is no greater sorrow than to recall in misery the time when we were happy." — Dante Alighieri',
             'video': {'title': 'The Philosophy of Sadness', 'channel': 'The School of Life', 'link': 'https://www.youtube.com/results?search_query=philosophy+of+sadness', 'reason': 'Understanding the value of melancholic reflection.'},
             'books': [{'title': 'The Noonday Demon', 'author': 'Andrew Solomon', 'reason': 'A comprehensive look at the anatomy of sadness.', 'purchase_link': 'https://www.google.com/search?q=The+Noonday+Demon+Andrew+Solomon+buy'}, {'title': 'Year of Magical Thinking', 'author': 'Joan Didion', 'reason': 'A masterpiece on grief and resilience.', 'purchase_link': 'https://www.google.com/search?q=Year+of+Magical+Thinking+Joan+Didion+buy'}],
-            'songs': [{'artist': 'Adele', 'title': 'Someone Like You', 'explanation': 'A powerful exploration of loss and longing.'}, {'artist': 'Gary Jules', 'title': 'Mad World', 'explanation': 'A hauntingly beautiful reflection on the complexities of life.'}]
+            'songs': [
+                {'artist': 'Adele', 'title': 'Someone Like You', 'explanation': 'A powerful exploration of loss and longing.'},
+                {'artist': 'Gary Jules', 'title': 'Mad World', 'explanation': 'A hauntingly beautiful reflection on the complexities of life.'},
+                {'artist': 'Radiohead', 'title': 'No Surprises', 'explanation': 'Gentle, melancholic textures for introspective processing.'}
+            ]
         },
         'angry': {
             'story': 'A powerful storm gathers on the horizon, crackling with a high electricity that demands as much respect as it does attention today. This intense energy is an ocean of untapped potential, a roaring fire that can either consume everything or forge something completely new and strong. You are standing at the center of this whirlwind, a pillar of focus in a world that often feels too small for your grander vision. Channels this heat into a steady purpose, letting the lightning clear the path for the transformation you truly seek. You possess the inner strength to turn this fierce moment into a legacy of bold action and unwavering inner conviction.',
             'quote': '"For every minute you are angry you lose sixty seconds of happiness." — Ralph Waldo Emerson',
             'video': {'title': 'Understanding Anger', 'channel': 'Mindful', 'link': 'https://www.youtube.com/results?search_query=understanding+anger+psychology', 'reason': 'Neurological insights into the response of anger.'},
             'books': [{'title': 'Rage Becomes Her', 'author': 'Soraya Chemaly', 'reason': 'The power of anger as a catalyst for change.', 'purchase_link': 'https://www.google.com/search?q=Rage+Becomes+Her+Soraya+Chemaly+buy'}],
-            'songs': [{'artist': 'Rage Against The Machine', 'title': 'Killing In The Name', 'explanation': 'A raw expression of defiance and boundary setting.'}]
+            'songs': [
+                {'artist': 'Rage Against The Machine', 'title': 'Killing In The Name', 'explanation': 'A raw expression of defiance and boundary setting.'},
+                {'artist': 'The White Stripes', 'title': 'Seven Nation Army', 'explanation': 'A driving rhythm to channel intense focus and drive.'},
+                {'artist': 'Linkin Park', 'title': 'In The End', 'explanation': 'A rhythmic release for complex emotional tension.'}
+            ]
         },
         'fearful': {
             'story': 'The world feels suddenly vast and unfamiliar, like a dense fog that has rolled in from the silent and deep sea. In this state of heightened awareness, even the smallest whisper seems to carry a heavy weight of mystery and hidden secrets. You are like a careful explorer charting an unknown continent, every step a testament to your quiet courage and your deep-seated will to thrive. This moment of caution is not a weakness but a sharp and vital survival instinct, a bridge leading you toward a place of greater safety and understanding. Trust your path, for your inner light is burning bright today across the entire winding landscape now.',
             'quote': '"The only thing we have to fear is fear itself." — Franklin D. Roosevelt',
             'video': {'title': 'The Science of Fear', 'channel': 'Vsauce', 'link': 'https://www.youtube.com/results?search_query=science+of+fear', 'reason': 'A fascinating look at why we experience fear.'},
             'books': [{'title': 'Feel the Fear and Do It Anyway', 'author': 'Susan Jeffers', 'reason': 'Converting fear into power and action.', 'purchase_link': 'https://www.google.com/search?q=Feel+the+Fear+and+Do+It+Anyway+buy'}],
-            'songs': [{'artist': 'Florence + The Machine', 'title': 'Shake It Out', 'explanation': 'A song about releasing the grip of internal fears.'}]
+            'songs': [
+                {'artist': 'Florence + The Machine', 'title': 'Shake It Out', 'explanation': 'A song about releasing the grip of internal fears.'},
+                {'artist': 'Enya', 'title': 'Storms in Africa', 'explanation': 'Calming, rhythmic grounding for a state of high alert.'},
+                {'artist': 'London Grammar', 'title': 'Strong', 'explanation': 'A haunting melody that reinforces innate internal power.'}
+            ]
         },
         'surprised': {
             'story': 'A sudden burst of color explodes across your vision, like a meteor trailing sparks through a midnight sky of deep blue and silver. This unexpected moment of pure wonder has redirected your focus, pulling you into a state of vibrant curiosity and profound sensory delight. You are moving through a world that still holds the capacity to startle and amaze, a place where the ordinary can transform into the extraordinary in the blink of an eye. Embrace this high energy, this sudden peak of novelty that reminds you how much there is left to discover. Your spirit remains beautifully open to the magic of surprise within the entire human experience.',
             'quote': '"The world is full of magical things, patiently waiting for our senses to grow sharper." — W.B. Yeats',
             'video': {'title': 'The Psychology of Surprise', 'channel': 'Enlightenment', 'link': 'https://www.youtube.com/results?search_query=psychology+of+surprise', 'reason': 'Exploring the cognitive impact of the unexpected.'},
             'books': [{'title': 'Stumbling on Happiness', 'author': 'Daniel Gilbert', 'reason': 'Insight into how our brains perceive the future.', 'purchase_link': 'https://www.google.com/search?q=Stumbling+on+Happiness+Daniel+Gilbert+buy'}],
-            'songs': [{'artist': 'Radiohead', 'title': 'Everything In Its Right Place', 'explanation': 'A sonic journey through unexpected shifts in perspective.'}]
+            'songs': [
+                {'artist': 'Radiohead', 'title': 'Everything In Its Right Place', 'explanation': 'A sonic journey through unexpected shifts in perspective.'},
+                {'artist': 'MGMT', 'title': 'Electric Feel', 'explanation': 'An upbeat, surprising rhythmic encounter for the senses.'},
+                {'artist': 'Glass Animals', 'title': 'Heat Waves', 'explanation': 'Atmospheric shifts that match cognitive novelty.'}
+            ]
         },
         'disgust': {
             'story': 'You have reached a clear and definite edge, a boundary of the soul that demands deep respect and unwavering internal alignment today. This visceral sense of clarity is a gift, a shield that protects the sanctity of your character and the purity of your path. You are like a diamond that remains untouched by the dust, a spirit that knows exactly where it ends and where the rest of the world begins. Trust this powerful discernment, for it is the voice of your own integrity speaking a truth that is both firm and necessary. You are charting a course that is authentically yours, free from common shadows and external static.',
             'quote': '"Disgust is the visceral realization that we have a standard." — Anonymous',
             'video': {'title': 'How Emotions Work', 'channel': 'Kurzgesagt', 'link': 'https://youtu.be/SJOjpprbfMo', 'reason': 'Understanding the evolutionary roots of all emotions.'},
             'books': [{'title': 'Radical Acceptance', 'author': 'Tara Brach', 'reason': 'Embracing life with compassion.', 'purchase_link': 'https://www.google.com/search?q=Radical+Acceptance+Tara+Brach+buy'}, {'title': 'The Upside of Your Dark Side', 'author': 'Todd Kashdan', 'reason': 'Finding value in uncomfortable emotions.', 'purchase_link': 'https://www.google.com/search?q=The+Upside+of+Your+Dark+Side+buy'}],
-            'songs': [{'artist': 'Britney Spears', 'title': 'Toxic', 'explanation': 'Recognizing what we find disagreeable.'}, {'artist': 'Lorde', 'title': 'Royals', 'explanation': 'Subtle disdain for the superficial.'}]
+            'songs': [
+                {'artist': 'Britney Spears', 'title': 'Toxic', 'explanation': 'Recognizing and safely distancing from the disagreeable.'},
+                {'artist': 'Lorde', 'title': 'Royals', 'explanation': 'A grounded disdain for the superficial and excessive.'},
+                {'artist': 'Billie Eilish', 'title': 'Bad Guy', 'explanation': 'A rhythmic declaration of autonomy and boundaries.'}
+            ]
         },
         'neutral': {
             'story': 'A steady river flows through the quiet valley of your consciousness, reflecting the vast and open sky with perfect, mirror-like clarity today. There is a profound peace in this equilibrium, a balanced state where every breath is a synchronized and rhythmic celebration of the present moment. You are standing on solid ground, a center of calm in a world that is constantly shifting and turning. This internal harmony is a foundation of strength, a reservoir of poised resilience that allows you to move with quiet grace and absolute focus. Embrace this stillness, for it is the powerful baseline that supports your entire journey across the rolling tides and unfolding light.',
             'quote': '"Nothing diminishes anxiety faster than action." — Walter Richard Sickert',
             'video': {'title': 'The Art of Neutrality', 'channel': 'TED', 'link': 'https://www.youtube.com/results?search_query=art+of+mindfulness+neutrality', 'reason': 'Finding balance in a chaotic world.'},
             'books': [{'title': 'The Power of Now', 'author': 'Eckhart Tolle', 'reason': 'A guide to spiritual enlightenment and presence.', 'purchase_link': 'https://www.google.com/search?q=The+Power+of+Now+buy'}],
-            'songs': [{'artist': 'Enya', 'title': 'Only Time', 'explanation': 'A serene and timeless reflection on life.'}]
+            'songs': [
+                {'artist': 'Enya', 'title': 'Only Time', 'explanation': 'A serene and timeless reflection on life.'},
+                {'artist': 'Bon Iver', 'title': 'Holocene', 'explanation': 'Grounding, expansive textures for a balanced state of being.'},
+                {'artist': 'Ludovico Einaudi', 'title': 'Nuvole Bianche', 'explanation': 'A pure piano composition for focused, quiet resonance.'}
+            ]
         }
     }
     return fallbacks.get(fused_emotion, fallbacks['neutral'])
