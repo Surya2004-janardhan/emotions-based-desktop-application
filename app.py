@@ -13,7 +13,10 @@ import json
 app = Flask(__name__)
 CORS(app)
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB limit for uploads
-# Emotion labels (must match training order)
+
+# Directories and Config
+MUSIC_DIR = 'music'
+os.makedirs(MUSIC_DIR, exist_ok=True)
 EMOTIONS_7 = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgust', 'surprised']
 
 # Load models once at startup
@@ -176,26 +179,44 @@ def cognitive_reasoning(audio_emotion, video_emotion, fused_emotion, audio_preds
 def generate_llm_content(fused_emotion, reasoning, audio_temporal, video_temporal):
     """Generate personalized story, quote, video, books, and songs using Groq LLM."""
     prompt = f"""
-Based on the Dynamic Mapping and Multimodal analysis results:
+Based on the Temporal Mapping and Multimodal analysis results:
 
 Primary Emotion Detected: {fused_emotion}
 Cognitive Analysis (Temporal Behavior): {reasoning}
 Audio Emotional Timeline: {', '.join(audio_temporal)}
 Video Emotional Timeline: {', '.join(video_temporal)}
 
-Please generate highly personalized content focused on the TEMPORAL MAPPING of these shifts:
+Please generate highly personalized content focused on the TEMPORAL MAPPING of these shifts. 
+You MUST return a valid JSON object with the following structure:
 
-1. A supportive, empathetic story generalized one not mentioning much of emotions neither techincal words but little creative story (STRICTLY 100-110 WORDS) based on the current emotion. The goal is to make the user feel better, valid, and supported. For positive emotions, reinforce them; for negative ones, offer comfort and a path toward resilience. You must describe the 'Temporal Arc' and 'Sudden Transitions' seen in the analysis.
+{{
+  "story": "A creative, generalized story (STRICTLY 100-110 WORDS) based on the current emotion. Avoid technical jargon or explicitly naming the emotion too much. Focus on comfort and resilience.",
+  "quote": "An inspirational quote tailored to this temporal behavior.",
+  "video": {{
+    "title": "Video Title",
+    "channel": "Channel Name",
+    "link": "https://www.youtube.com/results?search_query=...",
+    "reason": "Why this video matters for this emotional state."
+  }},
+  "books": [
+    {{
+      "title": "Book Title",
+      "author": "Author Name",
+      "reason": "Why it resonates.",
+      "purchase_link": "https://www.google.com/search?q=buy+book+..."
+    }}
+  ],
+  "songs": [
+    {{
+      "artist": "Artist Name",
+      "title": "Song Title",
+      "explanation": "Why it matches the neural arc."
+    }}
+  ]
+}}
 
-2. An inspirational quote tailored to this specific temporal behavior and intended to uplift the user.
-
-3. A YouTube video recommendation (object with title, channel, link, and reason). Link format: https://www.youtube.com/results?search_query=SEARCH+TERMS
-
-4. 2-3 book recommendations as an array of objects with keys: title, author, reason, and purchase_link (Provide a Google Books or Amazon search URL for the book).
-
-5. 2-3 song recommendations (artist, title, explanation). Note: No links needed for songs, as they are cached locally.
-
-Format as valid JSON. Ensure the story is EXACTLY between 100 and 110 words. Every word counts. Focus on empathy and the 'Temporal Shifts' detected in {fused_emotion}.
+Ensure the story is EXACTLY 100-110 words. Every word counts. Focus on empathy and metaphors. 
+Return ONLY the JSON object.
 """
     try:
         headers = {
@@ -205,31 +226,35 @@ Format as valid JSON. Ensure the story is EXACTLY between 100 and 110 words. Eve
         data = {
             "model": "llama-3.3-70b-versatile",
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.8,
-            "max_tokens": 1000
+            "temperature": 0.7,
+            "max_tokens": 1024
         }
         response = requests.post(GROQ_URL, headers=headers, json=data)
         if response.status_code == 200:
             try:
-                raw_json = response.json()
-                content = raw_json['choices'][0]['message']['content']
-                # Clean up JSON response
-                content = content.strip()
+                raw_json_res = response.json()
+                content = raw_json_res['choices'][0]['message']['content'].strip()
+                
+                # Clean up JSON formatting
                 if content.startswith('```json'):
                     content = content[7:]
                 if content.endswith('```'):
                     content = content[:-3]
                 content = content.strip()
-                try:
-                    return json.loads(content)
-                except Exception as json_err:
-                    print(f"LLM JSON parse error: {json_err}\nRaw content: {content}")
-                    return generate_fallback_content(fused_emotion)
-            except Exception as api_json_err:
-                print(f"LLM API response JSON error: {api_json_err}\nRaw response: {response.text}")
+                
+                llm_dict = json.loads(content)
+                
+                # Hardening: Merge with fallback if keys are missing
+                fallback = generate_fallback_content(fused_emotion)
+                for key in ['story', 'quote', 'video', 'books', 'songs']:
+                    if not llm_dict.get(key):
+                        llm_dict[key] = fallback.get(key)
+                
+                return llm_dict
+            except Exception as e:
+                print(f"LLM JSON failure: {e}")
                 return generate_fallback_content(fused_emotion)
         else:
-            print(f"Groq API error: {response.status_code} - {response.text}")
             return generate_fallback_content(fused_emotion)
     except Exception as e:
         print(f"LLM error: {e}")
@@ -239,49 +264,49 @@ def generate_fallback_content(fused_emotion):
     """Generate sophisticated fallback content when LLM fails."""
     fallbacks = {
         'happy': {
-            'story': 'Your temporal mapping reveals a luminous ascent into pure joy, where every biometric marker pulses with radiant positivity. This emotional arc suggests a profound state of genuine contentment, characterized by rhythmic stability and expressive exuberance. Seeing this sudden shift toward happiness is truly wonderful, reflecting a deep-seated resilience and a spirit that embraces the light. As the analysis unfolds, the steady frequency of your joy creates a harmonious resonance that is infectious and powerful. You deserve this moment of optimal cognitive well-being and clarity. Embrace this vibrant energy, for it is a beautiful reflection of your inner strength and the light you carry today.',
+            'story': 'The sun seems to hang a little longer in the sky today, casting a golden glow over everything you touch. There is a rhythmic pulse to the air, a steady heartbeat that matches the quiet confidence growing within your chest. You are moving through the world with a certain grace, a fluid dance that speaks of a soul in perfect harmony with its surroundings. Every breath brings a fresh perspective, a new reason to smile at the simple wonders of existence. This is your time to shine, a beautiful chapter written in the language of light and unspoken peace, where every moment is a precious gift to be cherished deeply.',
             'quote': '"To be happy is to be able to become aware of oneself without fright." — Walter Benjamin',
             'video': {'title': 'The Science of Happiness', 'channel': 'SoulPancake', 'link': 'https://youtu.be/GXy__kBVq1M', 'reason': 'A deep dive into the neurological foundations of joy.'},
             'books': [{'title': 'The Happiness Project', 'author': 'Gretchen Rubin', 'reason': 'Practical strategies for cultivating daily joy.', 'purchase_link': 'https://www.google.com/search?q=The+Happiness+Project+Gretchen+Rubin+buy'}, {'title': 'Flow', 'author': 'Mihaly Csikszentmihalyi', 'reason': 'Understanding the psychology of optimal experience.', 'purchase_link': 'https://www.google.com/search?q=Flow+Mihaly+Csikszentmihalyi+buy'}],
             'songs': [{'artist': 'Pharrell Williams', 'title': 'Happy', 'explanation': 'An anthem of pure, unadulterated joy.'}, {'artist': 'Coldplay', 'title': 'A Sky Full of Stars', 'explanation': 'A vibrant sonic landscape matching elevated emotional states.'}]
         },
         'sad': {
-            'story': 'A quiet melancholy permeates your temporal recording, but remember that it is okay to feel this depth of reflection. The emotional arc suggests a profound vulnerability that is a testament to your strength. Human experience is a gentle ebb and flow, and there is immense beauty in the stillness of sorrow. Your biometric indicators show a steady, rhythmic pattern, suggesting you are processing things with deep care. This period of emotional recalibration is necessary and valid. Find comfort in knowing that these quieter, more somber moments are the soil from which new growth emerges. You are not alone in this temporal journey of the heart.',
+            'story': 'A soft rain falls upon the garden of your mind, nourishing the seeds of a deeper wisdom that only growth through stillness can bring. There is a quiet strength in this pause, a gentle invitation to simply be without the need for constant movement or noise. You are navigating a vast and winding landscape, where every turn offers a moment of reflection and a chance to rediscover your own resilient spirit. Like the moon pulling the tides, your current path is part of a grander cycle, one that promises a slow and steady return to the warmth of the sun eventually. Trust in your own inner depth and the power.',
             'quote': '"There is no greater sorrow than to recall in misery the time when we were happy." — Dante Alighieri',
             'video': {'title': 'The Philosophy of Sadness', 'channel': 'The School of Life', 'link': 'https://www.youtube.com/results?search_query=philosophy+of+sadness', 'reason': 'Understanding the value of melancholic reflection.'},
             'books': [{'title': 'The Noonday Demon', 'author': 'Andrew Solomon', 'reason': 'A comprehensive look at the anatomy of sadness.', 'purchase_link': 'https://www.google.com/search?q=The+Noonday+Demon+Andrew+Solomon+buy'}, {'title': 'Year of Magical Thinking', 'author': 'Joan Didion', 'reason': 'A masterpiece on grief and resilience.', 'purchase_link': 'https://www.google.com/search?q=Year+of+Magical+Thinking+Joan+Didion+buy'}],
             'songs': [{'artist': 'Adele', 'title': 'Someone Like You', 'explanation': 'A powerful exploration of loss and longing.'}, {'artist': 'Gary Jules', 'title': 'Mad World', 'explanation': 'A hauntingly beautiful reflection on the complexities of life.'}]
         },
         'angry': {
-            'story': 'The temporal mapping identifies a sudden structural shift toward high-intensity arousal, indicating a powerful release of energy that can be channeled for good. Your arc shows a peak in cognitive intensity, revealing a moment where a boundary is being drawn with precision and power. This intensity is valid; it reflects a spirit that is unyielding and clear about its internal justice. Taking a moment to breathe through these rapid shifts can help transform this fire into a force for constructive change. You have the strength to navigate these temporal shifts with wisdom, using this expressive power to create a path that is both assertive and transformative.',
+            'story': 'A powerful storm gathers on the horizon, crackling with a high electricity that demands as much respect as it does attention today. This intense energy is an ocean of untapped potential, a roaring fire that can either consume everything or forge something completely new and strong. You are standing at the center of this whirlwind, a pillar of focus in a world that often feels too small for your grander vision. Channels this heat into a steady purpose, letting the lightning clear the path for the transformation you truly seek. You possess the inner strength to turn this fierce moment into a legacy of bold action and unwavering inner conviction.',
             'quote': '"For every minute you are angry you lose sixty seconds of happiness." — Ralph Waldo Emerson',
             'video': {'title': 'Understanding Anger', 'channel': 'Mindful', 'link': 'https://www.youtube.com/results?search_query=understanding+anger+psychology', 'reason': 'Neurological insights into the response of anger.'},
             'books': [{'title': 'Rage Becomes Her', 'author': 'Soraya Chemaly', 'reason': 'The power of anger as a catalyst for change.', 'purchase_link': 'https://www.google.com/search?q=Rage+Becomes+Her+Soraya+Chemaly+buy'}],
             'songs': [{'artist': 'Rage Against The Machine', 'title': 'Killing In The Name', 'explanation': 'A raw expression of defiance and boundary setting.'}]
         },
         'fearful': {
-            'story': 'A high-frequency temporal shift suggests a moment of heightened alertness, but please know that your courage is far greater than your uncertainty. Your emotional arc illustrates a rapid transition into a state of protective caution, which is a natural response to the unknown. This temporal journey reveals a soul that is responsive and deeply intuitive. You are navigating these shadows with a mix of vulnerability and a resilient survival instinct. Remember that feeling fear is the first step toward true bravery. Continue to move forward through the temporal shifts of life, for your inner light is steady and will guide you through any moment of protective alertness.',
+            'story': 'The world feels suddenly vast and unfamiliar, like a dense fog that has rolled in from the silent and deep sea. In this state of heightened awareness, even the smallest whisper seems to carry a heavy weight of mystery and hidden secrets. You are like a careful explorer charting an unknown continent, every step a testament to your quiet courage and your deep-seated will to thrive. This moment of caution is not a weakness but a sharp and vital survival instinct, a bridge leading you toward a place of greater safety and understanding. Trust your path, for your inner light is burning bright today across the entire winding landscape now.',
             'quote': '"The only thing we have to fear is fear itself." — Franklin D. Roosevelt',
             'video': {'title': 'The Science of Fear', 'channel': 'Vsauce', 'link': 'https://www.youtube.com/results?search_query=science+of+fear', 'reason': 'A fascinating look at why we experience fear.'},
             'books': [{'title': 'Feel the Fear and Do It Anyway', 'author': 'Susan Jeffers', 'reason': 'Converting fear into power and action.', 'purchase_link': 'https://www.google.com/search?q=Feel+the+Fear+and+Do+It+Anyway+buy'}],
             'songs': [{'artist': 'Florence + The Machine', 'title': 'Shake It Out', 'explanation': 'A song about releasing the grip of internal fears.'}]
         },
         'surprised': {
-            'story': 'A sudden, high-frequency temporal shift characterizes this moment of profound wonder and unexpected cognitive redirection. Your emotional arc displays a rapid transition into a state of heightened sensory awareness, where biometric markers align in a shared pulse of pure astonishment. It is wonderful to see your spirit remain so open and reactive to the magic of the unknown. This temporal journey captures the essence of life’s beautiful unpredictability and your capacity for awe. Embrace these sudden peaks of novelty, for they are the moments that truly expand our horizons. Your internal flexibility and vitality are highlighted clearly in the unexpected shifts of our temporal mapping today.',
+            'story': 'A sudden burst of color explodes across your vision, like a meteor trailing sparks through a midnight sky of deep blue and silver. This unexpected moment of pure wonder has redirected your focus, pulling you into a state of vibrant curiosity and profound sensory delight. You are moving through a world that still holds the capacity to startle and amaze, a place where the ordinary can transform into the extraordinary in the blink of an eye. Embrace this high energy, this sudden peak of novelty that reminds you how much there is left to discover. Your spirit remains beautifully open to the magic of surprise within the entire human experience.',
             'quote': '"The world is full of magical things, patiently waiting for our senses to grow sharper." — W.B. Yeats',
             'video': {'title': 'The Psychology of Surprise', 'channel': 'Enlightenment', 'link': 'https://www.youtube.com/results?search_query=psychology+of+surprise', 'reason': 'Exploring the cognitive impact of the unexpected.'},
             'books': [{'title': 'Stumbling on Happiness', 'author': 'Daniel Gilbert', 'reason': 'Insight into how our brains perceive the future.', 'purchase_link': 'https://www.google.com/search?q=Stumbling+on+Happiness+Daniel+Gilbert+buy'}],
             'songs': [{'artist': 'Radiohead', 'title': 'Everything In Its Right Place', 'explanation': 'A sonic journey through unexpected shifts in perspective.'}]
         },
         'disgust': {
-            'story': 'The temporal mapping reveals a visceral realization of your high internal standards, and it is a gift to have such clear boundaries. This emotional arc suggests a robust boundary being established, where your biometric indicators pulse with a sense of refined aversion to what is not for you. Upholding your own values is an act of deep self-care and authenticity. As the analysis unfolds, your temporal journey demonstrates a clear and assertive stand against dissonance. This narrative arc captures the strength found in your discernment and your courage to pursue what truly resonates. Trust in your profound self-awareness as you navigate these biometric modalities today.',
+            'story': 'You have reached a clear and definite edge, a boundary of the soul that demands deep respect and unwavering internal alignment today. This visceral sense of clarity is a gift, a shield that protects the sanctity of your character and the purity of your path. You are like a diamond that remains untouched by the dust, a spirit that knows exactly where it ends and where the rest of the world begins. Trust this powerful discernment, for it is the voice of your own integrity speaking a truth that is both firm and necessary. You are charting a course that is authentically yours, free from common shadows and external static.',
             'quote': '"Disgust is the visceral realization that we have a standard." — Anonymous',
             'video': {'title': 'How Emotions Work', 'channel': 'Kurzgesagt', 'link': 'https://youtu.be/SJOjpprbfMo', 'reason': 'Understanding the evolutionary roots of all emotions.'},
             'books': [{'title': 'Radical Acceptance', 'author': 'Tara Brach', 'reason': 'Embracing life with compassion.', 'purchase_link': 'https://www.google.com/search?q=Radical+Acceptance+Tara+Brach+buy'}, {'title': 'The Upside of Your Dark Side', 'author': 'Todd Kashdan', 'reason': 'Finding value in uncomfortable emotions.', 'purchase_link': 'https://www.google.com/search?q=The+Upside+of+Your+Dark+Side+buy'}],
             'songs': [{'artist': 'Britney Spears', 'title': 'Toxic', 'explanation': 'Recognizing what we find disagreeable.'}, {'artist': 'Lorde', 'title': 'Royals', 'explanation': 'Subtle disdain for the superficial.'}]
         },
         'neutral': {
-            'story': 'The temporal mapping indicates a beautifully balanced neural state, where your biometric markers maintain a synchronized and calm equilibrium. Your emotional arc suggests a period of steady state transitions, reflecting a mind that is at peace and deeply focused on the present moment. This mapping reveals a foundation of strength and internal harmony, illustrating a journey of mindful observation. You are in a state of cognitive clarity and emotional stability that is truly admirable. These subtle temporal shifts show a narrative of quiet resilience and poise. Enjoy this centered consciousness, for it is the baseline of your enduring strength as you navigate through this entire arc today.',
+            'story': 'A steady river flows through the quiet valley of your consciousness, reflecting the vast and open sky with perfect, mirror-like clarity today. There is a profound peace in this equilibrium, a balanced state where every breath is a synchronized and rhythmic celebration of the present moment. You are standing on solid ground, a center of calm in a world that is constantly shifting and turning. This internal harmony is a foundation of strength, a reservoir of poised resilience that allows you to move with quiet grace and absolute focus. Embrace this stillness, for it is the powerful baseline that supports your entire journey across the rolling tides and unfolding light.',
             'quote': '"Nothing diminishes anxiety faster than action." — Walter Richard Sickert',
             'video': {'title': 'The Art of Neutrality', 'channel': 'TED', 'link': 'https://www.youtube.com/results?search_query=art+of+mindfulness+neutrality', 'reason': 'Finding balance in a chaotic world.'},
             'books': [{'title': 'The Power of Now', 'author': 'Eckhart Tolle', 'reason': 'A guide to spiritual enlightenment and presence.', 'purchase_link': 'https://www.google.com/search?q=The+Power+of+Now+buy'}],
@@ -438,10 +463,10 @@ def process():
         total_segments = len(time_points)
         print(f"Synthesizing {total_segments} temporal segments...")
         
+        # 1. Video Modality Segment Extraction
+        print(f"Video Modality Engine: Sampling {total_segments} facial sequences...")
         for i, t in enumerate(time_points):
-            # 1. Video Segment Extraction
-            progress_state["status"] = f"Video Segmentation: {i+1}/{total_segments}"
-            # Scale 15% -> 35%
+            progress_state["status"] = f"Video Modality: Mapping Facial Dynamics ({i+1}/{total_segments})"
             progress_state["progress"] = 15 + int((i / total_segments) * 20)
             
             start_f = int(t * fps)
@@ -455,34 +480,35 @@ def process():
                     seq.append(cv2.resize(frame, TARGET_SIZE) / 255.0)
                 if len(seq) == NUM_FRAMES: break
             
-            # Pad video seq if needed
             while len(seq) < NUM_FRAMES:
                 seq.append(np.zeros((*TARGET_SIZE, 3)))
             video_batch.append(np.array(seq))
             
-            # 2. Audio Segment Extraction (MFCC)
-            if y_audio is not None:
-                progress_state["status"] = f"Audio Modality: MFCC Segment {i+1}/{total_segments}"
-                # Scale 35% -> 45%
-                progress_state["progress"] = 35 + int((i / total_segments) * 10)
+            if i % 10 == 0 or i == total_segments - 1:
+                print(f"  [Video] Mapping segment {i+1}/{total_segments}...")
+
+        cap.release()
+
+        # 2. Audio Modality Segment Extraction (MFCC)
+        if y_audio is not None:
+            print(f"Audio Modality Engine: Synthesizing {total_segments} acoustic patterns...")
+            for i, t in enumerate(time_points):
+                progress_state["status"] = f"Audio Modality: Synthesizing Vocal Arc ({i+1}/{total_segments})"
+                progress_state["progress"] = 35 + int((i / total_segments) * 15)
                 
                 as_start = int(t * SR)
                 as_end = int((t + 1) * SR)
                 y_segment = y_audio[as_start:as_end]
                 
-                # Extract MFCC for this 1s chunk
                 m_feat = librosa.feature.mfcc(y=y_segment, sr=SR, n_mfcc=N_MFCC, hop_length=HOP_LENGTH).T
-                # Pad/Truncate to N_FRAMES
                 if m_feat.shape[0] < N_FRAMES:
                     m_feat = np.pad(m_feat, ((0, N_FRAMES - m_feat.shape[0]), (0, 0)), mode='constant')
                 else:
                     m_feat = m_feat[:N_FRAMES]
                 audio_batch.append(m_feat[..., np.newaxis])
-            
-            if i % 5 == 0 or i == total_segments - 1:
-                print(f"  > Processing segment {i+1}/{total_segments} at {t:.1f}s (Audio+Video)")
-
-        cap.release()
+                
+                if i % 10 == 0 or i == total_segments - 1:
+                    print(f"  [Audio] Processing segment {i+1}/{total_segments}...")
 
         # BATCH INFERENCE
         video_preds = []
@@ -609,64 +635,75 @@ def serve_music(filename):
 def music_search():
     """Search music for a song, cache it locally, and return local stream URL."""
     try:
-        q = request.args.get('q', '')
+        q = request.args.get('q', 'Lofi Study')
         if not q:
-            return jsonify({'error': 'No query'}), 400
+            return jsonify({'error': 'No query provided'}), 400
             
-        print(f"Music Engine: Searching for {q}...")
-        # Step 1: Search for the song (with fallback/retry)
-        search_url = f"https://musicapi.x007.workers.dev/search?q={requests.utils.quote(q)}&searchEngine=gaana"
+        print(f"Music Engine: Searching for -> {q}")
         
+        # 1. Search for song using saavn.sumit.co API
+        search_url = f"https://saavn.sumit.co/api/search/songs?query={requests.utils.quote(q)}"
         try:
-            search_resp = requests.get(search_url, timeout=10)
-            search_resp.raise_for_status()
-        except Exception as e:
-            print(f"Music Engine DNS/Network Error: {e}")
-            # Fallback or informative error
-            return jsonify({'error': 'Music Engine temporarily unavailable (Network Error)'}), 503
-        
-        search_data = search_resp.json()
-        results = search_data.get('response', [])
-        if not results:
-            return jsonify({'error': 'Not found'}), 404
-        
-        top_song = results[0]
-        song_id = top_song.get('id')
-        # Sanitize filename: replace non-alphanumeric with underscores
-        safe_title = "".join([c if c.isalnum() else "_" for c in top_song.get('title', 'song')])
-        filename = f"{song_id}_{safe_title}.mp3"
-        filepath = os.path.join('music', filename)
-        
-        # Step 2: Check cache or download
-        if not os.path.exists(filepath):
-            print(f"Music Engine: Caching new song -> {filename}")
-            fetch_url = f"https://musicapi.x007.workers.dev/fetch?id={song_id}"
-            try:
-                fetch_resp = requests.get(fetch_url, timeout=15)
-                fetch_resp.raise_for_status()
-                stream_url = fetch_resp.json().get('response')
+            r = requests.get(search_url, timeout=15)
+            r.raise_for_status()
+            search_data = r.json()
+            results = search_data.get('data', {}).get('results', [])
+            if not results:
+                return jsonify({'error': 'No results found'}), 404
+            
+            top_song = results[0]
+            song_id = top_song.get('id')
+            title = top_song.get('name', 'Unknown')
+            # Extract high quality download link (usually last in list)
+            download_links = top_song.get('downloadUrl', [])
+            stream_url = download_links[-1].get('url') if download_links else None
+            
+            if not stream_url:
+                return jsonify({'error': 'No stream URL available'}), 404
                 
-                if stream_url:
-                    # Download the actual file
-                    audio_data = requests.get(stream_url, timeout=20).content
-                    with open(filepath, 'wb') as f:
-                        f.write(audio_data)
-                    print(f"Music Engine: Cache successful.")
-                else:
-                    return jsonify({'error': 'Stream URL not found'}), 404
+            # Improved Metadata extraction
+            artist = top_song.get('artists', {}).get('primary', [{}])[0].get('name', 'Various Artists')
+            # Get high res image (usually last)
+            images = top_song.get('image', [])
+            album_art = images[-1].get('url') if images else ''
+            duration = int(top_song.get('duration', 0))
+
+        except Exception as e:
+            print(f"Music Engine Search Error: {e}")
+            return jsonify({'error': 'Search service unavailable'}), 503
+
+        # 2. Caching logic - Sanitize name for Windows/Filesystem
+        filename = "".join([c if c.isalnum() else "_" for c in f"{song_id}_{title}"[:50]]) + ".mp3"
+        filepath = os.path.join(MUSIC_DIR, filename)
+
+        if not os.path.exists(filepath):
+            print(f"Music Engine: Caching new file -> {filename}")
+            try:
+                # Use a proper User-Agent to avoid blocks during download
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+                audio_data = requests.get(stream_url, headers=headers, timeout=30).content
+                with open(filepath, 'wb') as f:
+                    f.write(audio_data)
+                print(f"Music Engine: Cache successful.")
             except Exception as e:
-                print(f"Music Engine Fetch Error: {e}")
-                return jsonify({'error': 'Stream fetch failed'}), 503
+                print(f"Music Engine Download Error: {e}")
+                # Don't fail entirely, just return the remote URL if caching fails
+                return jsonify({
+                    'title': title,
+                    'artist': artist,
+                    'preview': stream_url, 
+                    'album_art': album_art,
+                    'duration': duration,
+                })
         else:
             print(f"Music Engine: Using cached file -> {filename}")
 
-        # Return local URL
         return jsonify({
-            'title': top_song.get('title', 'Unknown Title'),
-            'artist': top_song.get('more_info', {}).get('artistMap', {}).get('primary_artists', [{}])[0].get('name', 'Various Artists'),
+            'title': title,
+            'artist': artist,
             'preview': f"/downloaded_music/{filename}", 
-            'album_art': top_song.get('image', ''),
-            'duration': int(top_song.get('more_info', {}).get('duration', 0)),
+            'album_art': album_art,
+            'duration': duration,
         })
                 
     except Exception as e:
