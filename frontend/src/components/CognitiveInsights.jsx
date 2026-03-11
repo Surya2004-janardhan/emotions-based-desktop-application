@@ -206,7 +206,7 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-3">
                 <ArrowRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <p className="text-[11px] text-text-secondary leading-relaxed">
-                  <span className="text-text-primary font-bold mr-1">Dynamic Mapping:</span>
+                  <span className="text-text-primary font-bold mr-1">Temporal Mapping:</span>
                   {m.journey.firstDom[0] !== m.journey.secondDom[0]
                     ? `Transition from ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]]} to ${m.journey.secondDom[0]} ${EMOTION_EMOJI[m.journey.secondDom[0]]} over ${m.journey.transitions.length} shifts.`
                     : `Persistent ${m.journey.firstDom[0]} ${EMOTION_EMOJI[m.journey.firstDom[0]]} state with minor variance across ${m.journey.uniqueEmotions} emotion types.`}

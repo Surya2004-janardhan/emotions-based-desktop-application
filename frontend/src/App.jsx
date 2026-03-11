@@ -50,7 +50,7 @@ export default function App() {
         </h1>
         
         <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed">
-          Ours neural engine synthesizes audio and visual biomarkers to provide 
+          Our neural engine synthesizes audio and visual biomarkers to provide 
            cognitive resonance and emotional insights in real-time.
         </p>
 

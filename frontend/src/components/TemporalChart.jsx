@@ -106,6 +106,7 @@ const chartOptions = (hasProbs) => ({
       max: 1.05,
       grace: '5%',
       grid: { color: 'rgba(255,255,255,0.03)' },
+      title: { display: true, text: 'Probability (%)', color: 'var(--color-text-muted)', font: { size: 9, weight: 'bold' } },
       ticks: { 
         color: 'var(--color-text-muted)', 
         font: { size: 10 },
@@ -118,8 +119,8 @@ const chartOptions = (hasProbs) => ({
 export default function TemporalChart({ results }) {
   if (!results) return null;
 
-  const audioProbs = results.audio_preds || [];
-  const videoProbs = results.video_preds || [];
+  const audioProbs = results.audio_probs_temporal || [];
+  const videoProbs = results.video_probs_temporal || [];
   const audioNames = results.audio_temporal || [];
   const videoNames = results.video_temporal || [];
 
@@ -135,7 +136,7 @@ export default function TemporalChart({ results }) {
       <div className="flex items-center gap-3 px-2">
         <Activity className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">
-           Dynamic Mapping
+           Temporal Distribution Engine
         </h3>
       </div>
       

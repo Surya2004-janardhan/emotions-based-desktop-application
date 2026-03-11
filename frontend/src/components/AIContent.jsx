@@ -114,7 +114,7 @@ export default function AIContent({ results }) {
            <Sparkles className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">Dynamic Mapping</h3>
+          <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">AI Recommendation Engine</h3>
           <p className="text-[10px] text-text-muted font-semibold uppercase tracking-tighter">AI-Synthesized Neural Arc</p>
         </div>
       </div>
