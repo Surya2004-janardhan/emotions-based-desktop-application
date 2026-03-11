@@ -41,7 +41,7 @@ export default function App() {
         <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
           <Sparkles className="w-4 h-4 text-primary" />
           <span className="text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
-            Next-Gen Multimodal Intelligence
+            Multimodal Intelligence
           </span>
         </div>
         
@@ -51,7 +51,7 @@ export default function App() {
         
         <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto leading-relaxed">
           Our advanced neural engine synthesizes audio and visual biomarkers to provide 
-          deep cognitive resonance and emotional insights in real-time.
+           cognitive resonance and emotional insights in real-time.
         </p>
 
         {/* Project Context */}
@@ -120,9 +120,7 @@ export default function App() {
           <Brain className="w-4 h-4 text-primary" />
           <span className="text-[10px] font-bold uppercase tracking-widest">EmotionAI System</span>
         </div>
-        <p className="text-[10px] text-text-muted font-medium">
-          D7 Multimodal Intelligence Protocol · 2026 Internal Release
-        </p>
+        
       </footer>
     </div>
   );

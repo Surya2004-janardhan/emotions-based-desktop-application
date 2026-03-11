@@ -29,17 +29,18 @@ const EMOTION_COLORS = {
  * Build dataset from probability arrays (smooth curves).
  */
 function buildProbDataset(probs) {
-  const labels = probs.map((_, i) => `${i + 1}`);
+  const labels = probs.map((_, i) => `${(i * 0.5).toFixed(1)}s`);
   const datasets = EMOTIONS.map((em, idx) => ({
     label: em.charAt(0).toUpperCase() + em.slice(1),
     data: probs.map((p) => p[idx]),
     borderColor: EMOTION_COLORS[em],
     backgroundColor: EMOTION_COLORS[em] + '10',
-    borderWidth: 2,
-    pointRadius: 0,        // cleaner, Uncodixify style
+    borderWidth: 3,
+    pointRadius: 0,
     pointHoverRadius: 5,
-    tension: 0.4,          // smooth bezier curves
-    fill: false,
+    tension: 0.35,
+    fill: true,
+    spanGaps: true,
   }));
   return { labels, datasets };
 }
@@ -48,96 +49,77 @@ function buildProbDataset(probs) {
  * Fallback: build from emotion name arrays (binary spikes).
  */
 function buildNameDataset(temporal) {
-  const labels = temporal.map((_, i) => `${i + 1}`);
+  const labels = temporal.map((_, i) => `${(i * 0.5).toFixed(1)}s`);
   const datasets = EMOTIONS.map((em) => ({
     label: em.charAt(0).toUpperCase() + em.slice(1),
     data: temporal.map((t) => (t === em ? 1 : 0)),
     borderColor: EMOTION_COLORS[em],
-    backgroundColor: EMOTION_COLORS[em] + '10',
-    borderWidth: 2,
+    backgroundColor: EMOTION_COLORS[em] + '20',
+    borderWidth: 2.5,
     pointRadius: 0,
-    pointHoverRadius: 5,
-    tension: 0.4,
-    fill: false,
+    tension: 0.2,
+    fill: true,
   }));
   return { labels, datasets };
 }
 
-const chartOptions = (title, hasProbs) => ({
+/**
+ * Common chart options with high visibility for all 7 emotions.
+ */
+const chartOptions = (hasProbs) => ({
   responsive: true,
   maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
   plugins: {
     legend: {
-      position: 'bottom',
+      position: 'top',
       labels: {
-        color: '#94A3B8',
-        font: { family: 'Inter', size: 10, weight: '500' },
         boxWidth: 8,
         usePointStyle: true,
         pointStyle: 'circle',
-        padding: 15,
-      },
-    },
-    title: {
-      display: false, // handeled by custom header
+        font: { size: 10, weight: 'bold' },
+        color: 'var(--color-text-muted)',
+        padding: 15
+      }
     },
     tooltip: {
-      backgroundColor: '#1C243B',
-      borderColor: 'rgba(166, 246, 255, 0.1)',
-      borderWidth: 1,
+      backgroundColor: 'rgba(15, 23, 42, 0.95)',
       padding: 12,
+      titleFont: { size: 13, weight: 'bold' },
+      bodyFont: { size: 12 },
       cornerRadius: 8,
-      titleFont: { family: 'Inter', size: 12, weight: '700' },
-      bodyFont: { family: 'Inter', size: 11 },
-      titleColor: '#F8FAFC',
-      bodyColor: '#F8FAFC',
-      callbacks: hasProbs
-        ? {
-            label: (ctx) => ` ${ctx.dataset.label}: ${(ctx.parsed.y * 100).toFixed(1)}%`,
-          }
-        : undefined,
-    },
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.1)',
+      callbacks: hasProbs ? {
+        label: (ctx) => ` ${ctx.dataset.label}: ${(ctx.parsed.y * 100).toFixed(1)}%`
+      } : undefined
+    }
   },
   scales: {
     x: {
-      ticks: { color: '#64748B', font: { size: 10 } },
-      grid: { color: 'rgba(166, 246, 255, 0.03)' },
-      title: { 
-        display: true, 
-        text: 'Temporal Segments (s)', 
-        color: '#64748B', 
-        font: { size: 10, weight: '600' },
-        padding: { top: 10 }
-      },
-      border: { display: false }
+      grid: { display: false },
+      ticks: { color: 'var(--color-text-muted)', font: { size: 10 } },
+      title: { display: true, text: 'Time (Seconds)', color: 'var(--color-text-muted)', font: { size: 9, weight: 'bold' } }
     },
     y: {
-      min: 0,
-      max: hasProbs ? 1 : 1.1,
-      ticks: {
-        color: '#64748B',
+      min: -0.05,
+      max: 1.05,
+      grace: '5%',
+      grid: { color: 'rgba(255,255,255,0.03)' },
+      ticks: { 
+        color: 'var(--color-text-muted)', 
         font: { size: 10 },
-        callback: (v) => hasProbs ? `${Math.round(v * 100)}%` : (v === 1 ? '●' : ''),
-        stepSize: hasProbs ? 0.25 : undefined,
-      },
-      grid: { color: 'rgba(166, 246, 255, 0.03)' },
-      title: hasProbs ? { 
-        display: true, 
-        text: 'Probability Confidence', 
-        color: '#64748B', 
-        font: { size: 10, weight: '600' } 
-      } : undefined,
-      border: { display: false }
-    },
-  },
+        callback: (v) => (v >= 0 && v <= 1 && hasProbs) ? `${Math.round(v * 100)}%` : ''
+      }
+    }
+  }
 });
 
 export default function TemporalChart({ results }) {
   if (!results) return null;
 
-  const audioProbs = results.audio_probs_temporal || [];
-  const videoProbs = results.video_probs_temporal || [];
+  const audioProbs = results.audio_preds || [];
+  const videoProbs = results.video_preds || [];
   const audioNames = results.audio_temporal || [];
   const videoNames = results.video_temporal || [];
 
@@ -153,7 +135,7 @@ export default function TemporalChart({ results }) {
       <div className="flex items-center gap-3 px-2">
         <Activity className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">
-           Temporal Distribution
+           Dynamic Mapping
         </h3>
       </div>
       
@@ -164,7 +146,7 @@ export default function TemporalChart({ results }) {
             <div className="h-64">
               <Line
                 data={hasAudioProbs ? buildProbDataset(audioProbs) : buildNameDataset(audioNames)}
-                options={chartOptions('Audio Stream', hasAudioProbs)}
+                options={chartOptions(hasAudioProbs)}
               />
             </div>
           </div>
@@ -175,7 +157,7 @@ export default function TemporalChart({ results }) {
             <div className="h-64">
               <Line
                 data={hasVideoProbs ? buildProbDataset(videoProbs) : buildNameDataset(videoNames)}
-                options={chartOptions('Video Stream', hasVideoProbs)}
+                options={chartOptions(hasVideoProbs)}
               />
             </div>
           </div>

@@ -54,8 +54,8 @@ export default function ProcessingLoader({ progress, status }) {
             {[
               { pct: 10, label: 'Isolate' },
               { pct: 40, label: 'Visual' },
-              { pct: 80, label: 'Biometrics' },
-              { pct: 90, label: 'Cognitive' },
+              { pct: 60, label: 'Audio' },
+              { pct: 85, label: 'Cognitive' },
               { pct: 100, label: 'Finalize' },
             ].map((m) => (
               <div key={m.pct} className="flex flex-col items-center">

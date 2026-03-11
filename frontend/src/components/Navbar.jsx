@@ -10,9 +10,6 @@ export default function Navbar({ chatOpen, onToggleChat }) {
           <span className="text-lg font-semibold tracking-tight text-text-primary">
             Emotion<span className="text-primary">AI</span>
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-md hidden sm:inline">
-            PRO
-          </span>
         </div>
 
         {/* Right */}

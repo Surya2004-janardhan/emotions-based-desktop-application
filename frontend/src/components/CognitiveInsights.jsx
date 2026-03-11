@@ -151,7 +151,7 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-3">
                 <Waves className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Mood Flux</span>
+                  <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Emotional Stability</span>
                   <p className="text-xs font-semibold text-text-primary mt-1 mb-0.5">{m.valenceTrajectory.direction}</p>
                   <p className="text-[10px] text-text-secondary leading-normal">{m.valenceTrajectory.desc}</p>
                 </div>
@@ -163,10 +163,10 @@ export default function CognitiveInsights({ results }) {
               <div className="flex items-start gap-3">
                 <Zap className="w-4 h-4 text-primary mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Arousal Peak</span>
-                  <p className="text-xs font-semibold text-text-primary mt-1 mb-0.5">{Math.round(m.arousal.peak * 100)}% Intensity</p>
+                  <span className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Intensity Peak</span>
+                  <p className="text-xs font-semibold text-text-primary mt-1 mb-0.5">{Math.round(m.arousal.peak * 100)}% Momentum</p>
                   <p className="text-[10px] text-text-secondary leading-normal">
-                    Peak state occurred during {m.arousal.peakAt} as {m.arousal.emotion} {EMOTION_EMOJI[m.arousal.emotion]}.
+                    Maximum arousal detected in {m.arousal.peakAt} as {m.arousal.emotion} {EMOTION_EMOJI[m.arousal.emotion]}.
                   </p>
                 </div>
               </div>
