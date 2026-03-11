@@ -23,7 +23,6 @@ fer-data/
 # C extensions
 *.so
 data/
-models/
 myenv/
 
 # Distribution / packaging
