@@ -1,16 +1,88 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Video, Camera, StopCircle, RotateCcw } from 'lucide-react';
+import { Video, Camera, StopCircle, RotateCcw, Mic } from 'lucide-react';
+
+const AudioVisualizer = ({ stream }) => {
+  const canvasRef = useRef(null);
+  const rafIdRef = useRef(null);
+  const analyserRef = useRef(null);
+
+  useEffect(() => {
+    if (!stream || !canvasRef.current) return;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyserRef.current = analyser;
+
+    // Create media stream source from the audio tracks
+    const audioStream = new MediaStream(stream.getAudioTracks());
+    if (audioStream.getAudioTracks().length === 0) return; // No audio
+
+    const source = audioCtx.createMediaStreamSource(audioStream);
+    source.connect(analyser);
+
+    const canvas = canvasRef.current;
+    const canvasCtx = canvas.getContext('2d');
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const draw = () => {
+      if (!canvasRef.current) return;
+      
+      const width = canvas.width;
+      const height = canvas.height;
+      
+      rafIdRef.current = requestAnimationFrame(draw);
+      analyser.getByteTimeDomainData(dataArray);
+
+      canvasCtx.clearRect(0, 0, width, height);
+      canvasCtx.lineWidth = 2;
+      canvasCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)'; // Tailwind sky-400
+      canvasCtx.beginPath();
+
+      const sliceWidth = width * 1.0 / bufferLength;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const v = dataArray[i] / 128.0;
+        const y = v * height / 2;
+
+        if (i === 0) {
+          canvasCtx.moveTo(x, y);
+        } else {
+          canvasCtx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+
+      canvasCtx.lineTo(width, height / 2);
+      canvasCtx.stroke();
+    };
+
+    draw();
+
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      if (audioCtx.state !== 'closed') audioCtx.close();
+    };
+  }, [stream]);
+
+  if (!stream || stream.getAudioTracks().length === 0) return null;
+
+  return (
+    <div className="absolute bottom-4 left-4 right-4 h-12 bg-black/50 backdrop-blur-md rounded-xl overflow-hidden border border-white/10 flex items-center px-4 gap-3">
+       <Mic className="w-4 h-4 text-sky-400 animate-pulse shrink-0" />
+       <canvas ref={canvasRef} width={300} height={40} className="w-full h-full" />
+    </div>
+  );
+};
 
 export default function RecordingPanel({
   recorder,
   onAnalyze,
   isProcessing,
 }) {
-  const [mode, setMode] = useState('upload');
-  const [uploadedFile, setUploadedFile] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState(null);
-  const fileInputRef = useRef(null);
 
   const {
     isRecording,
@@ -24,24 +96,9 @@ export default function RecordingPanel({
   } = recorder;
 
   useEffect(() => {
-    if (mode === 'live') {
-      requestPermission();
-    } else {
-      stopStream();
-    }
-  }, [mode]);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) { setUploadedFile(file); setRecordingBlob(null); }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('video/')) { setUploadedFile(file); setRecordingBlob(null); }
-  };
+    // Automatically request camera permission on mount since this is a system app
+    requestPermission();
+  }, []);
 
   const handleRecord = async () => {
     if (isRecording) { stopRecording(); }
@@ -53,92 +110,15 @@ export default function RecordingPanel({
   };
 
   const handleAnalyze = () => {
-    if (mode === 'upload' && uploadedFile) onAnalyze(uploadedFile, 'file');
-    else if (mode === 'live' && recordingBlob) onAnalyze(recordingBlob, 'blob');
+    if (recordingBlob) onAnalyze(recordingBlob, 'blob');
   };
 
-  const canAnalyze = (mode === 'upload' && uploadedFile) || (mode === 'live' && recordingBlob && !isRecording);
+  const canAnalyze = recordingBlob && !isRecording;
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-fade-up">
-      {/* Mode Toggle */}
-      <div className="flex justify-center mb-6">
-        <div className="inline-flex glass rounded-lg p-1 gap-1">
-          <button
-            onClick={() => { setMode('upload'); setRecordingBlob(null); }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              mode === 'upload'
-                ? 'bg-primary/20 text-primary'
-                : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
-            }`}
-          >
-            <Upload className="w-4 h-4" />
-            Upload
-          </button>
-          <button
-            onClick={() => { setMode('live'); setUploadedFile(null); }}
-            className={`flex items-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer ${
-              mode === 'live'
-                ? 'bg-primary/20 text-primary'
-                : 'text-text-secondary hover:text-text-primary hover:bg-white/5'
-            }`}
-          >
-            <Camera className="w-4 h-4" />
-            Live
-          </button>
-        </div>
-      </div>
-
       {/* Main Area */}
       <div className="relative">
-        {mode === 'upload' && (
-          <div
-            className={`glass glow-border rounded-xl p-12 text-center transition-all duration-200 cursor-pointer border-dashed border-2 ${
-              dragOver ? 'border-primary bg-primary/5' : 'border-border-subtle'
-            }`}
-            onClick={() => { if (!uploadedFile) fileInputRef.current?.click(); }}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-          >
-            {uploadedFile ? (
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-xl flex items-center justify-center bg-primary/10">
-                  <Video className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <p className="text-text-primary font-semibold text-lg">{uploadedFile.name}</p>
-                  <p className="text-text-secondary text-sm">{(uploadedFile.size / (1024 * 1024)).toFixed(1)} MB</p>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setUploadedFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  Replace video
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-xl flex items-center justify-center bg-surface-raised">
-                  <Upload className="w-8 h-8 text-text-muted" />
-                </div>
-                <div>
-                  <p className="text-text-primary font-medium text-lg">
-                    Select a video to analyze
-                  </p>
-                  <p className="text-text-secondary text-sm mt-1 mb-4">or drag and drop files here</p>
-                  <div className="inline-block px-4 py-1.5 rounded-md border border-border-strong text-xs text-text-muted">
-                    MP4, WebM, AVI • Max 100MB
-                  </div>
-                </div>
-              </div>
-            )}
-            <input ref={fileInputRef} type="file" accept="video/*" className="hidden" onChange={handleFileChange} />
-          </div>
-        )}
-
-        {mode === 'live' && (
           <div className="glass glow-border rounded-xl overflow-hidden max-w-md mx-auto">
             <div className="relative bg-surface-base flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
               {hasPermission ? (
@@ -177,6 +157,9 @@ export default function RecordingPanel({
                   </div>
                 </div>
               )}
+              
+              {/* Audio Waveform overlay */}
+              <AudioVisualizer stream={recorder.stream} />
             </div>
 
             <div className="p-6 flex flex-col items-center gap-4">
@@ -213,7 +196,6 @@ export default function RecordingPanel({
               </p>
             </div>
           </div>
-        )}
       </div>
 
       {/* Analyze Button */}

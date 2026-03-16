@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import cv2
 import numpy as np
@@ -9,6 +9,8 @@ import ffmpeg
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Silence TF warnings
 import json
+import sqlite3
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +20,38 @@ app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB limit for uploads
 MUSIC_DIR = 'music'
 os.makedirs(MUSIC_DIR, exist_ok=True)
 EMOTIONS_7 = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgust', 'surprised']
+
+DB_PATH = 'emotionai.db'
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    print("Initializing SQLite Database...")
+    with get_db() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                fused_emotion TEXT,
+                audio_emotion TEXT,
+                video_emotion TEXT,
+                confidence REAL,
+                stability REAL,
+                reasoning TEXT
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS music_mappings (
+                emotion TEXT PRIMARY KEY,
+                music_path TEXT
+            )
+        ''')
+        conn.commit()
+
+init_db()
 
 # Load models once at startup
 print("Loading models...")
@@ -657,6 +691,24 @@ def process():
         for path in [raw_video_path, video_path, audio_path]:
             if path and os.path.exists(path): os.remove(path)
 
+        # Log history to DB
+        try:
+            with get_db() as conn:
+                conn.execute('''
+                    INSERT INTO history (fused_emotion, audio_emotion, video_emotion, confidence, stability, reasoning)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (
+                    final_result.get('fused_emotion'),
+                    final_result.get('audio_emotion'),
+                    final_result.get('video_emotion'),
+                    final_result.get('timeline_confidence', 0),
+                    final_result.get('emotional_stability', 0),
+                    final_result.get('reasoning')
+                ))
+                conn.commit()
+        except Exception as db_err:
+            print(f"Error logging to DB: {db_err}")
+
         progress_state["progress"] = 100
         progress_state["status"] = "Complete"
         progress_state["results"] = final_result
@@ -750,6 +802,113 @@ def music_search():
         print(f"Music Engine Fatal Error: {e}")
         return jsonify({'error': 'Service Interruption'}), 500
 
+# --- SQLITE ENDPOINTS ---
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    """Fetch history for the calendar view."""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        with get_db() as conn:
+            rows = conn.execute('SELECT * FROM history ORDER BY timestamp DESC LIMIT ?', (limit,)).fetchall()
+            history = [dict(row) for row in rows]
+            return jsonify(history)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/history', methods=['DELETE'])
+def clear_history():
+    """Clear history log."""
+    try:
+        with get_db() as conn:
+            conn.execute('DELETE FROM history')
+            conn.commit()
+        return jsonify({'status': 'cleared'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/mappings', methods=['GET'])
+def get_mappings():
+    """Get user-defined music mappings."""
+    try:
+        with get_db() as conn:
+            rows = conn.execute('SELECT emotion, music_path FROM music_mappings').fetchall()
+            return jsonify({row['emotion']: row['music_path'] for row in rows})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/mappings', methods=['POST'])
+def save_mapping():
+    """Save or update a music mapping."""
+    try:
+        data = request.json
+        emotion = data.get('emotion')
+        music_path = data.get('music_path')
+        if not emotion or not music_path:
+             return jsonify({'error': 'Missing data'}), 400
+             
+        with get_db() as conn:
+            conn.execute('INSERT OR REPLACE INTO music_mappings (emotion, music_path) VALUES (?, ?)', (emotion, music_path))
+            conn.commit()
+        return jsonify({'status': 'saved'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/analyze_history', methods=['POST'])
+def analyze_history():
+    """Generates an NLP trend report based on the provided history data using Groq LLM."""
+    try:
+        data = request.json
+        history = data.get('history', [])
+        
+        if not history:
+             return jsonify({'analysis': 'Not enough data to generate a trend analysis.'})
+             
+        # Format history for prompt
+        history_summary = "\\n".join([
+            f"- {row.get('timestamp')}: Emotion: {row.get('fused_emotion')}, Stability: {row.get('stability', 0):.2f}, AI Note: {row.get('reasoning')}"
+            for row in history
+        ])
+
+        prompt = f"""
+        You are an elite cognitive behavioral analyst. Review the following chronological emotional history of a software developer:
+        {history_summary}
+        
+        Write a concise, empathetic 3-paragraph summary of their emotional trends over this period.
+        Point out any notable shifts, recurrent negative emotions (stress/anger/sadness), and suggest 2 practical, high-impact strategies to improve their daily workflow well-being based on this specific data.
+        Make it read like a professional psychological insight report. Do NOT use markdown. Start immediately.
+        """
+        
+        headers = {
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.5,
+            "max_tokens": 512
+        }
+        
+        response = requests.post(GROQ_URL, headers=headers, json=payload, timeout=20)
+        if response.status_code == 200:
+            analysis = response.json()['choices'][0]['message']['content'].strip()
+            return jsonify({'analysis': analysis})
+        else:
+            return jsonify({'analysis': 'AI Provider Error: ' + response.text}), 500
+            
+    except Exception as e:
+        print(f"Analyze history error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/stream_local', methods=['GET'])
+def stream_local():
+    """Stream an absolute local file path for Emotion intervention playback."""
+    file_path = request.args.get('path')
+    if not file_path or not os.path.exists(file_path):
+        return jsonify({'error': 'File not found'}), 404
+    return send_file(file_path)
+
 @app.route('/chat', methods=['POST'])
 def chat():
     """Chatbot endpoint — answers questions about analysis results."""
@@ -819,4 +978,4 @@ How to behave:
         return jsonify({'reply': 'Something went wrong. Please try again.'})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False, use_reloader=False, host='127.0.0.1', port=5000)

@@ -95,13 +95,15 @@ const chartOptions = (hasProbs) => ({
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: 'rgba(15, 23, 42, 0.95)',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)', // Light background
+      titleColor: '#0F172A',
+      bodyColor: '#475569',
       padding: 12,
       titleFont: { size: 13, weight: 'bold' },
       bodyFont: { size: 12 },
       cornerRadius: 8,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.1)',
+      borderColor: 'rgba(15,23,42,0.1)',
       callbacks: hasProbs ? {
         label: (ctx) => ` ${ctx.dataset.label}: ${(ctx.parsed.y * 100).toFixed(1)}%`
       } : undefined
@@ -111,33 +113,32 @@ const chartOptions = (hasProbs) => ({
     x: {
       grid: { display: false },
       ticks: { 
-        color: '#FFFFFF', // Pure White for maximum contrast
+        color: '#0F172A', // Dark for light theme
         font: { size: 10, weight: '700' },
         padding: 8
       },
       title: { 
         display: true, 
         text: 'TIMELINE (S)', 
-        color: '#6499E9', // Bright Azure
+        color: '#3B82F6', // Theme primary
         font: { size: 10, weight: '900' },
         padding: { top: 6 },
-        textStrokeWidth: 0.5,
-        textStrokeColor: '#FFFFFF10'
+        textStrokeWidth: 0
       }
     },
     y: {
       min: -0.02,
       max: 1.05,
-      grid: { color: 'rgba(255, 255, 255, 0.05)' },
+      grid: { color: 'rgba(15, 23, 42, 0.05)' },
       title: { 
         display: true, 
         text: 'PROBABILITY (%)', 
-        color: '#6499E9', 
+        color: '#3B82F6', 
         font: { size: 10, weight: '900' },
         padding: { bottom: 10 }
       },
       ticks: { 
-        color: '#FFFFFF', // Pure White
+        color: '#0F172A', // Dark for light theme
         font: { size: 10, weight: '700' },
         padding: 10,
         callback: (v) => (v >= 0 && v <= 1 && hasProbs) ? `${Math.round(v * 100)}%` : ''

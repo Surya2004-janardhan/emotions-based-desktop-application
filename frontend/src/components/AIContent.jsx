@@ -80,7 +80,7 @@ function SongPlayer({ artist, title }) {
         {loading ? (
           <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         ) : (
-          <div className={`w-full h-full flex items-center justify-center ${track?.album_art ? 'bg-black/40 opacity-0 group-hover:opacity-100' : ''} transition-opacity`}>
+          <div className={`w-full h-full flex items-center justify-center ${track?.album_art ? 'bg-white/40 opacity-0 group-hover:opacity-100' : ''} transition-opacity`}>
             {playing ? <Pause className="w-5 h-5 text-primary fill-primary" /> : <Play className="w-5 h-5 text-primary fill-primary" />}
           </div>
         )}
