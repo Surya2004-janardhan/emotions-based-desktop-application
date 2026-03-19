@@ -94,6 +94,64 @@ VIDEO_WINDOW_SIZE = 1  # seconds
 TARGET_SIZE = (112, 112)
 NUM_FRAMES = 10
 
+STRESS_BASELINE = {
+    'happy': 0.15,
+    'neutral': 0.25,
+    'surprised': 0.45,
+    'sad': 0.65,
+    'disgust': 0.70,
+    'fearful': 0.80,
+    'angry': 0.85,
+}
+
+def estimate_stress_state(fused_emotion, emotional_stability, transition_rate):
+    """Convert emotion dynamics into a coarse stress indicator for UI and coaching."""
+    baseline = STRESS_BASELINE.get(fused_emotion or 'neutral', 0.35)
+    stress_score = baseline + (0.2 * float(transition_rate)) + (0.1 * (1 - float(emotional_stability)))
+    stress_score = float(np.clip(stress_score, 0.0, 1.0))
+
+    if stress_score < 0.35:
+        stress_label = 'low'
+    elif stress_score < 0.65:
+        stress_label = 'moderate'
+    else:
+        stress_label = 'high'
+
+    return stress_score, stress_label
+
+def build_fallback_memes(fused_emotion):
+    meme_map = {
+        'happy': [
+            {'template': 'Success Kid', 'caption': 'When your meetings end on time and your coffee is still hot.', 'reason': 'Keeps the mood light and reinforces a positive work streak.'},
+            {'template': 'Leonardo Cheers', 'caption': 'POV: You finished the sprint and nobody added surprise scope.', 'reason': 'Celebrates healthy momentum without making the advice feel heavy.'},
+        ],
+        'sad': [
+            {'template': 'This Is Fine', 'caption': 'When the inbox grows faster than your energy, but you are still trying.', 'reason': 'Uses gentle humor to reduce emotional pressure during low phases.'},
+            {'template': 'Grumpy Cat', 'caption': 'Me pretending I am okay with one more “quick” call at 6 PM.', 'reason': 'Helps the user feel seen instead of judged.'},
+        ],
+        'angry': [
+            {'template': 'Distracted Boyfriend', 'caption': 'Me choosing deep breaths instead of replying instantly to that message.', 'reason': 'Reframes irritation into self-control with a familiar meme format.'},
+            {'template': 'Woman Yelling at Cat', 'caption': 'My stress talking vs my actual to-do list.', 'reason': 'Turns escalation into perspective and release.'},
+        ],
+        'fearful': [
+            {'template': 'Hide the Pain Harold', 'caption': 'When deadlines start staring back and you open another tab anyway.', 'reason': 'Softens anxiety with relatable workplace humor.'},
+            {'template': 'Panik/Kalm', 'caption': 'Panik: too much work. Kalm: one task at a time.', 'reason': 'Supports grounding through simple contrast.'},
+        ],
+        'disgust': [
+            {'template': 'Nope Octopus', 'caption': 'When your brain rejects the whole workflow and asks for a reset.', 'reason': 'Acknowledges overload and boundary fatigue.'},
+            {'template': 'Side Eye Puppet', 'caption': 'That look when another “urgent” task appears with no context.', 'reason': 'Lets the user laugh at workplace friction instead of absorbing it.'},
+        ],
+        'surprised': [
+            {'template': 'Surprised Pikachu', 'caption': 'When the “small fix” turns into a full afternoon.', 'reason': 'Turns unexpected workload spikes into something playful.'},
+            {'template': 'Wait, What?', 'caption': 'My face when the calendar says free but the reality says otherwise.', 'reason': 'Matches sudden change in the emotional pattern.'},
+        ],
+        'neutral': [
+            {'template': 'Drake Hotline Bling', 'caption': 'Ignoring chaos, choosing a steady pace.', 'reason': 'Supports calm and sustainable work rhythm.'},
+            {'template': 'Office Jim Look', 'caption': 'When you survive the day by staying quietly balanced.', 'reason': 'Keeps neutral states engaging instead of flat.'},
+        ],
+    }
+    return meme_map.get(fused_emotion, meme_map['neutral'])
+
 def extract_mfcc(audio_path):
     """Extract MFCC features from audio file using optimized batch processing."""
     try:
@@ -211,21 +269,23 @@ def cognitive_reasoning(audio_emotion, video_emotion, fused_emotion, audio_preds
     return " ".join(mapping_depth)
 
 def generate_llm_content(fused_emotion, reasoning, audio_temporal, video_temporal):
-    """Generate personalized story, quote, video, books, and songs using Groq LLM."""
+    """Generate personalized stress-support content using Groq LLM."""
     prompt = f"""
-Based on the Temporal Mapping and Multimodal analysis results:
+You are helping a laptop-based employee understand stress patterns using emotion analysis over time.
+
+Based on the temporal emotion shifts below:
 
 Primary Emotion Detected: {fused_emotion}
-Cognitive Analysis (Temporal Behavior): {reasoning}
+Stress and Temporal Summary: {reasoning}
 Audio Emotional Timeline: {', '.join(audio_temporal)}
 Video Emotional Timeline: {', '.join(video_temporal)}
 
-Please generate highly personalized content focused on the TEMPORAL MAPPING of these shifts. 
+Please generate highly personalized support content in SIMPLE ENGLISH.
 You MUST return a valid JSON object with the following structure:
 
 {{
-  "story": "A creative, generalized story (STRICTLY 100-110 WORDS) based on the current emotion. Avoid technical jargon or explicitly naming the emotion too much. Focus on comfort and resilience.",
-  "quote": "An inspirational quote tailored to this temporal behavior.",
+  "story": "A short, calming reflection (STRICTLY 90-110 WORDS) that explains the user's emotional or stress pattern gently in simple English.",
+  "quote": "A short encouraging quote tailored to this stress pattern.",
   "video": {{
     "title": "Video Title",
     "channel": "Channel Name",
@@ -244,24 +304,32 @@ You MUST return a valid JSON object with the following structure:
     {{
       "artist": "Artist 1",
       "title": "Song 1",
-      "explanation": "Why it matches the neural arc."
+      "explanation": "Why it helps with this stress pattern."
     }},
     {{
       "artist": "Artist 2",
       "title": "Song 2",
-      "explanation": "Second layer of resonance."
+      "explanation": "Why it helps with this stress pattern."
     }},
     {{
       "artist": "Artist 3",
       "title": "Song 3",
-      "explanation": "Core emotional grounding."
+      "explanation": "Why it helps with this stress pattern."
+    }}
+  ],
+  "memes": [
+    {{
+      "template": "Meme Template Name",
+      "caption": "A light, office-friendly meme caption based on the user's current stress or emotion pattern.",
+      "reason": "Why this meme suits the user right now."
     }}
   ]
 }}
 
-Ensure the story is EXACTLY 100-110 words. Every word counts. 
+Ensure the story is STRICTLY 90-110 words.
 You MUST provide EXACTLY 3 song recommendations. 
-Focus on empathy and metaphors. 
+You MUST provide EXACTLY 2 meme suggestions.
+Keep the tone warm, practical, and not clinical.
 Return ONLY the JSON object.
 """
     try:
@@ -292,7 +360,7 @@ Return ONLY the JSON object.
                 
                 # Hardening: Merge with fallback if keys are missing
                 fallback = generate_fallback_content(fused_emotion)
-                for key in ['story', 'quote', 'video', 'books', 'songs']:
+                for key in ['story', 'quote', 'video', 'books', 'songs', 'memes']:
                     if not llm_dict.get(key):
                         llm_dict[key] = fallback.get(key)
                 
@@ -387,7 +455,9 @@ def generate_fallback_content(fused_emotion):
             ]
         }
     }
-    return fallbacks.get(fused_emotion, fallbacks['neutral'])
+    selected = dict(fallbacks.get(fused_emotion, fallbacks['neutral']))
+    selected['memes'] = build_fallback_memes(fused_emotion)
+    return selected
 
 def sample_frames(video_path):
     """Sample frame sequences from video over time with fallback for missing metadata."""
@@ -638,6 +708,11 @@ def process():
         emotional_stability = 1.0 - (unique_emotions - 1) / len(EMOTIONS_7)
         transitions = sum(1 for i in range(1, len(combined_emotions)) if combined_emotions[i] != combined_emotions[i-1])
         transition_rate = transitions / max(1, len(combined_emotions) - 1)
+        stress_score, stress_label = estimate_stress_state(
+            timeline_dominant_emotion,
+            emotional_stability,
+            transition_rate
+        )
 
         # COGNITIVE LAYER ANALYSIS
         reasoning_parts = []
@@ -649,6 +724,7 @@ def process():
         if emotional_stability > 0.8: reasoning_parts.append("High stability.")
         elif emotional_stability > 0.6: reasoning_parts.append("Moderate stability.")
         else: reasoning_parts.append("Low stability.")
+        reasoning_parts.append(f"Estimated stress level is {stress_label}.")
 
         cognitive_reasoning = " ".join(reasoning_parts)
         progress_state["progress"] = 90
@@ -676,6 +752,7 @@ def process():
             'video': llm_content.get('video', ''),
             'books': llm_content.get('books', []),
             'songs': llm_content.get('songs', []),
+            'memes': llm_content.get('memes', []),
             'audio_temporal': audio_emotions_temporal,
             'video_temporal': video_emotions_temporal,
             'audio_probs_temporal': audio_probs,
@@ -684,7 +761,9 @@ def process():
             'timeline_confidence': float(timeline_confidence),
             'emotional_stability': float(emotional_stability),
             'transition_rate': float(transition_rate),
-            'emotion_distribution': dict(emotion_counts)
+            'emotion_distribution': dict(emotion_counts),
+            'stress_score': stress_score,
+            'stress_label': stress_label,
         }
 
         # Clean up
@@ -856,7 +935,7 @@ def save_mapping():
 
 @app.route('/analyze_history', methods=['POST'])
 def analyze_history():
-    """Generates an NLP trend report based on the provided history data using Groq LLM."""
+    """Generate a simple-English stress trend report from historical readings."""
     try:
         data = request.json
         history = data.get('history', [])
@@ -871,12 +950,17 @@ def analyze_history():
         ])
 
         prompt = f"""
-        You are an elite cognitive behavioral analyst. Review the following chronological emotional history of a software developer:
+        You are a workplace well-being assistant.
+        Review the following chronological emotional history of a laptop-based employee:
         {history_summary}
         
-        Write a concise, empathetic 3-paragraph summary of their emotional trends over this period.
-        Point out any notable shifts, recurrent negative emotions (stress/anger/sadness), and suggest 2 practical, high-impact strategies to improve their daily workflow well-being based on this specific data.
-        Make it read like a professional psychological insight report. Do NOT use markdown. Start immediately.
+        Write a clear 3-paragraph summary in simple English.
+        Focus on stress patterns across the selected time period.
+        Explain whether the person looks steady, under pressure, or improving.
+        Mention important emotional shifts during the day, week, or month.
+        Give exactly 2 practical tips that fit a working employee who spends long hours in front of a laptop.
+        Avoid technical jargon, avoid clinical language, and do not use markdown.
+        Start immediately.
         """
         
         headers = {
@@ -911,12 +995,13 @@ def stream_local():
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Chatbot endpoint — answers questions about analysis results."""
+    """Personalized assistant for current and time-based stress analysis."""
     try:
         data = request.get_json()
         user_message = data.get('message', '')
         results_context = data.get('context', {})
         history = data.get('history', [])[-10:]  # keep last 10 messages
+        analysis_history = data.get('analysis_history', [])[-20:]
 
         # Build context summary from results
         ctx_parts = []
@@ -926,6 +1011,8 @@ def chat():
             ctx_parts.append(f"Video Emotion: {results_context.get('video_emotion', 'N/A')}")
             ctx_parts.append(f"Confidence: {results_context.get('timeline_confidence', 'N/A')}")
             ctx_parts.append(f"Stability: {results_context.get('emotional_stability', 'N/A')}")
+            ctx_parts.append(f"Estimated Stress Level: {results_context.get('stress_label', 'N/A')}")
+            ctx_parts.append(f"Estimated Stress Score: {results_context.get('stress_score', 'N/A')}")
             ctx_parts.append(f"Reasoning: {results_context.get('reasoning', 'N/A')}")
             if results_context.get('audio_temporal'):
                 ctx_parts.append(f"Audio Timeline: {', '.join(results_context['audio_temporal'])}")
@@ -934,23 +1021,38 @@ def chat():
             if results_context.get('emotion_distribution'):
                 ctx_parts.append(f"Distribution: {json.dumps(results_context['emotion_distribution'])}")
 
+        if analysis_history:
+            history_lines = []
+            for row in analysis_history:
+                history_lines.append(
+                    f"{row.get('timestamp', 'Unknown time')}: "
+                    f"emotion={row.get('fused_emotion', 'unknown')}, "
+                    f"stress={row.get('stress_label', 'unknown')}, "
+                    f"stability={row.get('stability', row.get('emotional_stability', 'n/a'))}, "
+                    f"reasoning={row.get('reasoning', '')}"
+                )
+            ctx_parts.append("Recent Time-Based Pattern:\n" + "\n".join(history_lines))
+
         context_str = '\n'.join(ctx_parts) if ctx_parts else 'No analysis results available yet.'
 
         # Build messages for Groq
         messages = [
-            {"role": "system", "content": f"""You are a warm, empathetic AI therapist. The person you're talking to just had their emotions analyzed and here's what was detected:
+            {"role": "system", "content": f"""You are a warm, personalized workplace well-being assistant.
+The user mainly wants help understanding stress levels using emotion patterns over time.
+Here is the latest analysis context and recent history:
 
 {context_str}
 
 How to behave:
-- You KNOW this person's emotional state — just talk to them naturally as a therapist would
-- Do NOT repeat analysis data, confidence scores, or technical details unless specifically asked
-- For greetings (hi, hello) just reply with a short warm message (1 line)
-- Keep responses SHORT (2-3 sentences max), warm, and natural
-- Use exactly 1 emoji per response
-- Validate their feelings, offer gentle perspective, suggest small actionable steps
-- Only share specific analysis details if they explicitly ask (e.g. "what was my score?")
-- If no results available, gently suggest they run an analysis first"""}
+- Use SIMPLE ENGLISH.
+- Answer like a supportive personal AI for a working employee who spends long hours in front of a laptop.
+- Base your reply on the user's latest emotional analysis and recent time-based pattern.
+- Do NOT sound clinical, robotic, or overly dramatic.
+- Keep responses SHORT, warm, and practical, usually 2 to 4 sentences.
+- If the user asks about trends, mention day/week/month patterns when present in the context.
+- Give small actions the user can do during work: breathe, stretch, hydrate, walk, pause, reduce tabs, take one task at a time.
+- If asked directly about stress, explain it gently using the estimated stress level and emotional changes over time.
+- If there is not enough data yet, say that kindly and ask them to run more sessions over time."""}
         ]
 
         # Add conversation history
