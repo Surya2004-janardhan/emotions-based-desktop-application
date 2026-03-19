@@ -11,12 +11,12 @@ const VALENCE = { happy: 0.9, surprised: 0.4, neutral: 0.0, sad: -0.6, fearful: 
 // Arousal mapping: calm to excited (0 to 1)
 const AROUSAL = { neutral: 0.1, sad: 0.2, disgust: 0.4, happy: 0.6, fearful: 0.7, surprised: 0.8, angry: 0.9 };
 
-function ProgressGauge({ value, label, icon: Icon, max = 1, color }) {
+function ProgressGauge({ value, label, icon, max = 1, color }) {
   const pct = Math.round((value / max) * 100);
   return (
     <div className="flex items-center gap-4">
       <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-surface-raised shrink-0 border border-border-subtle">
-        <Icon className="w-5 h-5" style={{ color: color || 'var(--color-primary)' }} />
+        {icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between items-center mb-1.5">
@@ -128,7 +128,7 @@ export default function CognitiveInsights({ results }) {
             <BrainCircuit className="w-4 h-4 text-primary" />
           </div>
           <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">
-            Cognitive Diagnostics
+            Stress and Pattern Insights
           </h3>
         </div>
         <div className="px-2 py-0.5 rounded bg-surface-raised border border-border-subtle text-[9px] font-bold text-text-muted uppercase tracking-tighter">
@@ -138,10 +138,27 @@ export default function CognitiveInsights({ results }) {
 
       {/* Core Gauges */}
       <div className="grid grid-cols-1 gap-6">
-        <ProgressGauge value={results.timeline_confidence ?? 0} label="Diagnostic Confidence" icon={Activity} color="var(--color-primary)" />
-        <ProgressGauge value={results.emotional_stability ?? 0} label="Emotional Equilibrium" icon={HeartPulse} color="#22C55E" />
-        <ProgressGauge value={1 - (results.transition_rate ?? 0)} label="Signal Harmonicity" icon={Shield} color="#A855F7" />
+        <ProgressGauge value={results.timeline_confidence ?? 0} label="Reading Confidence" icon={<Activity className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />} color="var(--color-primary)" />
+        <ProgressGauge value={results.emotional_stability ?? 0} label="Emotional Stability" icon={<HeartPulse className="w-5 h-5" style={{ color: '#22C55E' }} />} color="#22C55E" />
+        <ProgressGauge value={1 - (results.transition_rate ?? 0)} label="Pattern Smoothness" icon={<Shield className="w-5 h-5" style={{ color: '#A855F7' }} />} color="#A855F7" />
       </div>
+
+      {typeof results.stress_score === 'number' && (
+        <div className="p-4 rounded-lg bg-surface-base border border-border-subtle">
+          <div className="flex items-start gap-3">
+            <Activity className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest">Estimated Stress Level</p>
+              <p className="text-sm font-bold text-text-primary mt-1 capitalize">
+                {results.stress_label || 'moderate'} stress
+              </p>
+              <p className="text-[11px] text-text-secondary mt-1 leading-relaxed">
+                This is a support indicator built from your dominant emotion, stability, and emotional shifts over time.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {m && (
         <div className="space-y-6 pt-6 border-t border-border-subtle">

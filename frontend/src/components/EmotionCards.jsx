@@ -10,13 +10,13 @@ const EMOTION_CONFIG = {
   surprised: { color: '#FB923C', emoji: '😲' },
 };
 
-function Card({ icon: Icon, label, emotion, sublabel }) {
+function Card({ icon, label, emotion, sublabel }) {
   const cfg = EMOTION_CONFIG[emotion] || EMOTION_CONFIG.neutral;
 
   return (
     <div className="panel p-6 flex flex-col items-center text-center gap-4 transition-all hover:border-primary/30 group">
       <div className="flex items-center gap-2 text-[10px] font-bold text-text-muted uppercase tracking-[0.2em] mb-1">
-        <Icon className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary transition-colors" />
+        {icon}
         {label}
       </div>
       
@@ -46,9 +46,9 @@ export default function EmotionCards({ results }) {
   if (!results) return null;
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-3xl mx-auto">
-      <Card icon={Mic} label="Acoustic" emotion={results.audio_emotion || 'neutral'} sublabel="Voice Modulation" />
-      <Card icon={MonitorPlay} label="Visual" emotion={results.video_emotion || 'neutral'} sublabel="Facial Dynamics" />
-      <Card icon={Zap} label="Synthesis" emotion={results.fused_emotion || 'neutral'} sublabel="Fused Analysis" />
+      <Card icon={<Mic className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary transition-colors" />} label="Acoustic" emotion={results.audio_emotion || 'neutral'} sublabel="Voice Modulation" />
+      <Card icon={<MonitorPlay className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary transition-colors" />} label="Visual" emotion={results.video_emotion || 'neutral'} sublabel="Facial Dynamics" />
+      <Card icon={<Zap className="w-3.5 h-3.5 text-primary/60 group-hover:text-primary transition-colors" />} label="Stress Signal" emotion={results.fused_emotion || 'neutral'} sublabel={results.stress_label ? `${results.stress_label} load` : 'Current pattern'} />
     </div>
   );
 }

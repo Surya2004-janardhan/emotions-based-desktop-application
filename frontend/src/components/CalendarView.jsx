@@ -127,7 +127,7 @@ export default function CalendarView() {
 
       // Persist so user doesn't need to re-run on same day
       if (ipc) await ipc.invoke('save-analysis', cacheKey, result);
-    } catch(e) {
+    } catch {
       setAnalysisText('Analysis failed. Ensure the backend is running and your API key is configured.');
     } finally {
       setAnalyzing(false);
@@ -146,7 +146,7 @@ export default function CalendarView() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-text-primary">History</h1>
-          <p className="text-sm text-text-muted mt-1">Review your emotional patterns over time.</p>
+          <p className="text-sm text-text-muted mt-1">Review your emotional and stress patterns over time.</p>
         </div>
         <button
           onClick={handleAnalyze}
@@ -195,7 +195,7 @@ export default function CalendarView() {
               <TrendingDown className="w-4 h-4 text-red-500" />
               <p className="text-2xl font-black text-red-500">{summary.neg}</p>
             </div>
-            <p className="text-xs text-text-muted font-medium">High Stress States</p>
+            <p className="text-xs text-text-muted font-medium">High Stress Signals</p>
           </div>
         </div>
       )}
@@ -210,13 +210,13 @@ export default function CalendarView() {
             : 'bg-blue-50 border-blue-200 text-blue-700'
         }`}>
           {summary.posRatio >= 0.6 && (
-            <>🎉 Great work! {Math.round(summary.posRatio * 100)}% of your readings show positive emotional states. Keep it up!</>
+            <>Great work. {Math.round(summary.posRatio * 100)}% of your readings show calmer or positive states. Keep this rhythm going.</>
           )}
           {summary.posRatio <= 0.3 && (
-            <>💙 High stress detected in this period. You're not alone — take breaks, hydrate, and step outside when possible.</>
+            <>High stress signals showed up in this period. You are not alone. Try short breaks, hydration, and stepping away from the screen for a few minutes.</>
           )}
           {summary.posRatio > 0.3 && summary.posRatio < 0.6 && (
-            <>📊 Mixed emotional patterns in this period. Small positive habits can make a big difference.</>
+            <>Mixed emotional patterns appeared in this period. Small workday habits can still lower stress over time.</>
           )}
         </div>
       )}
@@ -272,7 +272,7 @@ export default function CalendarView() {
         <div className="panel p-6 border border-primary/20 bg-primary/5 animate-fade-up">
           <div className="flex items-center gap-2 mb-3">
             <Brain className="w-5 h-5 text-primary" />
-            <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">AI Insight Report</h3>
+            <h3 className="text-sm font-bold text-text-primary uppercase tracking-widest">AI Stress Report</h3>
             {analysisDate && <span className="ml-auto text-[10px] text-text-muted">Generated {analysisDate}</span>}
           </div>
           <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">{analysisText}</p>
