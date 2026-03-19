@@ -11,6 +11,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Silence TF warnings
 import json
 import sqlite3
 from datetime import datetime
+from uuid import uuid4
 
 app = Flask(__name__)
 CORS(app)
@@ -40,7 +41,9 @@ def init_db():
                 video_emotion TEXT,
                 confidence REAL,
                 stability REAL,
-                reasoning TEXT
+                reasoning TEXT,
+                stress_score REAL,
+                stress_label TEXT
             )
         ''')
         conn.execute('''
@@ -49,6 +52,11 @@ def init_db():
                 music_path TEXT
             )
         ''')
+        history_columns = {row['name'] for row in conn.execute("PRAGMA table_info(history)").fetchall()}
+        if 'stress_score' not in history_columns:
+            conn.execute('ALTER TABLE history ADD COLUMN stress_score REAL')
+        if 'stress_label' not in history_columns:
+            conn.execute('ALTER TABLE history ADD COLUMN stress_label TEXT')
         conn.commit()
 
 init_db()
@@ -202,71 +210,6 @@ def extract_mfcc(audio_path):
     except Exception as e:
         print(f"Failed to extract MFCC: {e}")
         return None
-
-def cognitive_reasoning(audio_emotion, video_emotion, fused_emotion, audio_preds, video_preds):
-    """Enhanced cognitive reasoning with more detailed analysis."""
-    reasoning = []
-
-    # Basic agreement analysis
-    if audio_emotion == video_emotion:
-        reasoning.append(f"Both audio and video modalities strongly agree on {audio_emotion}.")
-    else:
-        reasoning.append(f"Modalities show disagreement: audio suggests {audio_emotion} while video indicates {video_emotion}. Fusion resulted in {fused_emotion} as the most balanced interpretation.")
-
-    # Confidence analysis with scores
-    audio_conf = np.max(np.mean(audio_preds, axis=0))
-    video_conf = np.max(np.mean(video_preds, axis=0))
-    reasoning.append(f"Confidence levels: Audio {audio_conf:.2f}, Video {video_conf:.2f}. Higher confidence indicates more reliable detection.")
-
-    # Temporal consistency analysis
-    audio_consistency = len(set([EMOTIONS_7[np.argmax(p)] for p in audio_preds])) / len(audio_preds)
-    video_consistency = len(set([EMOTIONS_7[np.argmax(p)] for p in video_preds])) / len(video_preds)
-    reasoning.append(f"Temporal stability: Audio consistency {audio_consistency:.2f}, Video consistency {video_consistency:.2f}. Lower values indicate more emotional fluctuation.")
-
-    # Emotion intensity analysis
-    audio_intensity = np.mean([np.max(p) for p in audio_preds])
-    video_intensity = np.mean([np.max(p) for p in video_preds])
-    reasoning.append(f"Emotional intensity: Audio {audio_intensity:.2f}, Video {video_intensity:.2f}. Higher values suggest stronger emotional expression.")
-
-    # Contextual interpretation
-    if fused_emotion in ['angry', 'fearful', 'sad']:
-        reasoning.append("Detected negative emotion cluster. This may indicate stress, concern, or dissatisfaction. Consider environmental factors and personal context.")
-    elif fused_emotion in ['happy', 'surprised']:
-        reasoning.append("Positive emotional state detected. This suggests engagement, satisfaction, or pleasant surprise. The person appears to be in a favorable emotional state.")
-    elif fused_emotion == 'neutral':
-        reasoning.append("Neutral emotional state observed. This could indicate calmness, concentration, or emotional restraint. May also suggest controlled or professional demeanor.")
-    elif fused_emotion == 'disgust':
-        reasoning.append("Disgust detected. This emotion often relates to aversion or strong disapproval. Consider recent experiences or environmental factors.")
-
-    # Temporal Mapping: Stability & Intensity analysis
-    stability_score = results.get('emotional_stability', 0.5)
-    intensity_peak = results.get('transition_rate', 0.0)
-    
-    audio_prob = np.max(np.mean(audio_preds, axis=0))
-    video_prob = np.max(np.mean(video_preds, axis=0))
-
-    if audio_prob and video_prob:
-        pref = "Multimodal analysis shows high emotional cohesion."
-    else:
-        pref = "Analysis suggests a modal divergence, indicating complex internal regulation."
-
-    # Temporal pattern analysis for Temporal Mapping
-    audio_changes = sum(1 for i in range(1, len(audio_preds)) if np.argmax(audio_preds[i]) != np.argmax(audio_preds[i-1]))
-    video_changes = sum(1 for i in range(1, len(video_preds)) if np.argmax(video_preds[i]) != np.argmax(video_preds[i-1]))
-    total_shifts = audio_changes + video_changes
-    
-    mapping_depth = []
-    mapping_depth.append(pref)
-    
-    if total_shifts > 5:
-        mapping_depth.append(f"Temporal Mapping detects a high-frequency temporal shift ({total_shifts} transitions), suggesting a sudden change in emotional state.")
-    else:
-        mapping_depth.append(f"Temporal behavior indicates high synchronicity and steady state transitions.")
-        
-    if stability_score > 0.8: mapping_depth.append("High emotional cohesion observed.")
-    else: mapping_depth.append("Temporal flux detected in the emotional arc.")
-
-    return " ".join(mapping_depth)
 
 def generate_llm_content(fused_emotion, reasoning, audio_temporal, video_temporal):
     """Generate personalized stress-support content using Groq LLM."""
@@ -515,17 +458,35 @@ def sample_frames(video_path):
     cap.release()
     return np.array(sequences) if sequences else None
 
-# Global progress state
-progress_state = {"progress": 0, "status": "Ready", "results": None}
+DEFAULT_PROGRESS_STATE = {"progress": 0, "status": "Ready", "results": None}
+progress_states = {}
+
+def init_job(job_id):
+    progress_states[job_id] = dict(DEFAULT_PROGRESS_STATE)
+    return progress_states[job_id]
+
+def update_job(job_id, *, progress=None, status=None, results=None):
+    state = progress_states.setdefault(job_id, dict(DEFAULT_PROGRESS_STATE))
+    if progress is not None:
+        state["progress"] = progress
+    if status is not None:
+        state["status"] = status
+    if results is not None:
+        state["results"] = results
+    return state
 
 @app.route('/status', methods=['GET'])
 def get_status():
-    return jsonify(progress_state)
+    job_id = request.args.get('job_id')
+    if not job_id:
+        return jsonify(DEFAULT_PROGRESS_STATE)
+    return jsonify(progress_states.get(job_id, dict(DEFAULT_PROGRESS_STATE)))
 
 @app.route('/process', methods=['POST'])
 def process():
-    global progress_state
-    progress_state = {"progress": 0, "status": "Initializing", "results": None}
+    job_id = request.form.get('job_id') or str(uuid4())
+    progress_state = init_job(job_id)
+    update_job(job_id, progress=0, status="Initializing", results=None)
     
     print("=" * 50)
     print("STARTING EMOTION ANALYSIS PROCESS")
@@ -546,8 +507,7 @@ def process():
         video_file.save(raw_video_path)
 
         # 1. Normalize Video using FFmpeg (Fixes WebM headers for OpenCV)
-        progress_state["status"] = "Normalizing Video"
-        progress_state["progress"] = 5
+        update_job(job_id, status="Normalizing Video", progress=5)
         print("Normalizing video container...")
         ffmpeg_bin = os.path.join(os.getcwd(), 'ffmpeg.exe') if os.path.exists('ffmpeg.exe') else 'ffmpeg'
         try:
@@ -564,8 +524,7 @@ def process():
             video_path = raw_video_path
 
         # 2. Extract audio from video
-        progress_state["status"] = "Extracting Audio"
-        progress_state["progress"] = 10
+        update_job(job_id, status="Extracting Audio", progress=10)
         print("Extracting audio from video...")
         try:
             (
@@ -581,8 +540,7 @@ def process():
             audio_path = None
 
         # --- UNIFIED TEMPORAL PROCESSING ---
-        progress_state["status"] = "Initializing Multimodal Streams"
-        progress_state["progress"] = 12
+        update_job(job_id, status="Initializing Multimodal Streams", progress=12)
         cap = cv2.VideoCapture(video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -592,7 +550,7 @@ def process():
         y_audio, sr_audio = (None, None)
         if audio_path and os.path.exists(audio_path):
             print("Audio Modality Engine: Loading stream...")
-            progress_state["status"] = "Loading Audio Stream"
+            update_job(job_id, status="Loading Audio Stream")
             try:
                 y_audio, sr_audio = librosa.load(audio_path, sr=SR, mono=True)
                 print(f"Audio loaded: {len(y_audio)/SR:.2f}s at {SR}Hz")
@@ -610,8 +568,11 @@ def process():
         # 1. Video Modality Segment Extraction
         print(f"Video Modality Engine: Sampling {total_segments} facial sequences...")
         for i, t in enumerate(time_points):
-            progress_state["status"] = f"Video Modality: Mapping Facial Dynamics ({i+1}/{total_segments})"
-            progress_state["progress"] = 15 + int((i / total_segments) * 20)
+            update_job(
+                job_id,
+                status=f"Video Modality: Mapping Facial Dynamics ({i+1}/{total_segments})",
+                progress=15 + int((i / total_segments) * 20)
+            )
             
             start_f = int(t * fps)
             end_f = int((t + 1) * fps)
@@ -637,8 +598,11 @@ def process():
         if y_audio is not None:
             print(f"Audio Modality Engine: Synthesizing {total_segments} acoustic patterns...")
             for i, t in enumerate(time_points):
-                progress_state["status"] = f"Audio Modality: Synthesizing Vocal Arc ({i+1}/{total_segments})"
-                progress_state["progress"] = 35 + int((i / total_segments) * 15)
+                update_job(
+                    job_id,
+                    status=f"Audio Modality: Synthesizing Vocal Arc ({i+1}/{total_segments})",
+                    progress=35 + int((i / total_segments) * 15)
+                )
                 
                 as_start = int(t * SR)
                 as_end = int((t + 1) * SR)
@@ -659,8 +623,7 @@ def process():
         audio_preds = []
         
         if video_batch:
-            progress_state["status"] = "Neural Video Inference: Running Batch"
-            progress_state["progress"] = 50
+            update_job(job_id, status="Neural Video Inference: Running Batch", progress=50)
             print("Neural Engine: Running video batch inference...")
             v_batch = np.array(video_batch) # (N, 10, 112, 112, 3)
             # Flatten to extract features
@@ -673,15 +636,13 @@ def process():
             print(f"Neural Engine: Video predictions generated for {len(video_preds)} segments")
             
         if audio_batch:
-            progress_state["status"] = "Neural Audio Inference: Running Batch"
-            progress_state["progress"] = 70
+            update_job(job_id, status="Neural Audio Inference: Running Batch", progress=70)
             print("Neural Engine: Running audio batch inference...")
             a_input = np.array(audio_batch) # (N, 300, 13, 1)
             audio_preds = audio_model.predict(a_input, batch_size=32, verbose=0)
             print(f"Neural Engine: Audio predictions generated for {len(audio_preds)} segments")
 
-        progress_state["progress"] = 85
-        progress_state["status"] = "Cognitive Synthesis Layer"
+        update_job(job_id, progress=85, status="Cognitive Synthesis Layer")
         print("Cognitive Layer: Analyzing multimodal temporal patterns...")
 
         audio_emotions_temporal = [EMOTIONS_7[np.argmax(p)] for p in audio_preds] if len(audio_preds) > 0 else []
@@ -727,8 +688,7 @@ def process():
         reasoning_parts.append(f"Estimated stress level is {stress_label}.")
 
         cognitive_reasoning = " ".join(reasoning_parts)
-        progress_state["progress"] = 90
-        progress_state["status"] = "Generating AI Response"
+        update_job(job_id, progress=90, status="Generating AI Response")
 
         # AI LAYER
         llm_content = generate_llm_content(
@@ -774,28 +734,29 @@ def process():
         try:
             with get_db() as conn:
                 conn.execute('''
-                    INSERT INTO history (fused_emotion, audio_emotion, video_emotion, confidence, stability, reasoning)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO history (fused_emotion, audio_emotion, video_emotion, confidence, stability, reasoning, stress_score, stress_label)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (
                     final_result.get('fused_emotion'),
                     final_result.get('audio_emotion'),
                     final_result.get('video_emotion'),
                     final_result.get('timeline_confidence', 0),
                     final_result.get('emotional_stability', 0),
-                    final_result.get('reasoning')
+                    final_result.get('reasoning'),
+                    final_result.get('stress_score', 0),
+                    final_result.get('stress_label', 'moderate'),
                 ))
                 conn.commit()
         except Exception as db_err:
             print(f"Error logging to DB: {db_err}")
 
-        progress_state["progress"] = 100
-        progress_state["status"] = "Complete"
-        progress_state["results"] = final_result
+        final_result['job_id'] = job_id
+        update_job(job_id, progress=100, status="Complete", results=final_result)
         return jsonify(final_result)
 
     except Exception as e:
-        progress_state["status"] = f"Error: {str(e)}"
-        return jsonify({'error': str(e)})
+        update_job(job_id, status=f"Error: {str(e)}")
+        return jsonify({'error': str(e), 'job_id': job_id})
 
 @app.route('/downloaded_music/<path:filename>')
 def serve_music(filename):
