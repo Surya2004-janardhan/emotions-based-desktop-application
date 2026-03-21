@@ -2,8 +2,7 @@
  * useDaemon — Background Monitoring Service
  *
  * Behavior per plan.md requirements #3, #4, #5, #6:
- * - When Auto Mode is ON, repeating timer fires every `intervalMinutes`.
- * - When timer fires: record for exactly `recordDurationMinutes` (real camera time).
+ * - When Auto Mode is ON, loop is: wait `intervalMinutes` -> record `recordDurationMinutes` -> process -> repeat.
  * - After recording: send to Flask /process in background, persist result via IPC.
  * - After processing: detect emotional shift vs. recent history.
  * - If shift detected: fire native OS notification via IPC.
@@ -15,27 +14,48 @@ const ipc = typeof window !== 'undefined' && window.require
   : null;
 
 const NEGATIVE_EMOTIONS = ['angry', 'sad', 'fearful', 'disgust'];
+const MEDIA_CONSTRAINTS = {
+  video: {
+    width: { ideal: 640, max: 1280 },
+    height: { ideal: 480, max: 720 },
+    frameRate: { ideal: 15, max: 24 },
+  },
+  audio: true,
+};
 
-export default function useDaemon({ settings, onNewResult }) {
+export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
   const [isDaemonActive, setIsDaemonActive] = useState(false);
   const [daemonStatus, setDaemonStatus] = useState('idle');
   const [nextFireIn, setNextFireIn] = useState(null);
+  const [liveStream, setLiveStream] = useState(null);
 
-  const intervalRef    = useRef(null);
+  const timeoutRef     = useRef(null);
   const countdownRef   = useRef(null);
   const recordingRef   = useRef(null);
-  const streamRef      = useRef(null);
   const recentEmotions = useRef([]); // rolling buffer of last 5 results
+  const activeRef      = useRef(false);
   // Always-fresh settings to avoid stale closure bugs in callbacks
   const settingsRef    = useRef(settings);
   useEffect(() => { settingsRef.current = settings; }, [settings]);
 
   // ── Helpers ───────────────────────────────────────────────
   const requestStream = async () => {
-    if (streamRef.current && streamRef.current.active) return streamRef.current;
-    const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    streamRef.current = s;
-    return s;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(MEDIA_CONSTRAINTS);
+      setLiveStream(stream);
+      return stream;
+    } catch {
+      // Fallback to camera-only so monitoring can continue when mic is denied.
+      const stream = await navigator.mediaDevices.getUserMedia({ ...MEDIA_CONSTRAINTS, audio: false });
+      setLiveStream(stream);
+      return stream;
+    }
+  };
+
+  const releaseStream = (stream) => {
+    if (!stream) return;
+    stream.getTracks().forEach((track) => track.stop());
+    setLiveStream((current) => (current === stream ? null : current));
   };
 
   const recordForDuration = useCallback((stream, durationMs) => {
@@ -101,9 +121,13 @@ export default function useDaemon({ settings, onNewResult }) {
 
     console.log(`[Daemon] Triggering notification → ${emotion}. AutoPlay: ${autoPlay}. Music: ${musicPath}`);
 
+    if (onShiftDetected) {
+      onShiftDetected({ emotion, musicPath, autoPlay });
+    }
+
     if (ipc) {
       try {
-        await ipc.invoke('notify-shift', { emotion, autoPlay, musicPath });
+        await ipc.invoke('notify-shift', { emotion, autoPlay: false, musicPath });
         console.log('[Daemon] Notification IPC sent successfully');
       } catch(e) {
         console.error('[Daemon] Notification IPC failed:', e);
@@ -121,19 +145,27 @@ export default function useDaemon({ settings, onNewResult }) {
         console.error('[Daemon] Web notification fallback failed:', e);
       }
     }
-  }, []);  // empty deps — reads from settingsRef.current at call time
+  }, [onShiftDetected]);  // reads from settingsRef.current at call time
 
 
   // ── Core Session ──────────────────────────────────────────
   const runSession = useCallback(async () => {
-    const durationMs = (settings.recordDurationMinutes || 5) * 60 * 1000;
-    console.log(`[Daemon] Session start — recording ${settings.recordDurationMinutes} min`);
+    const durationMin = settingsRef.current.recordDurationMinutes || 5;
+    const durationMs = durationMin * 60 * 1000;
+    console.log(`[Daemon] Session start — recording ${durationMin} min`);
+    let stream = null;
+    let startedAt = null;
+    let endedAt = null;
 
     try {
-      const stream = await requestStream();
+      startedAt = new Date().toISOString();
+      stream = await requestStream();
       setDaemonStatus('recording');
 
       const blob = await recordForDuration(stream, durationMs);
+      endedAt = new Date().toISOString();
+      releaseStream(stream);
+      stream = null;
       setDaemonStatus('processing');
 
       const result = await analyzeBlob(blob);
@@ -141,6 +173,11 @@ export default function useDaemon({ settings, onNewResult }) {
       if (result && !result.error) {
         const emotion = result.fused_emotion;
         console.log(`[Daemon] Analysis done. Emotion: ${emotion}`);
+        const enrichedResult = {
+          ...result,
+          recording_started_at: startedAt,
+          recording_ended_at: endedAt,
+        };
 
         // Detect shift BEFORE pushing into history
         const shouldNotify = detectShift(emotion);
@@ -150,10 +187,10 @@ export default function useDaemon({ settings, onNewResult }) {
         if (recentEmotions.current.length > 5) recentEmotions.current.shift();
 
         // Persist result via IPC
-        if (ipc) await ipc.invoke('save-result', result);
+        if (ipc) await ipc.invoke('save-result', enrichedResult);
 
         // Notify parent
-        if (onNewResult) onNewResult(result);
+        if (onNewResult) onNewResult(enrichedResult);
 
         // Fire notification if shift detected
         if (shouldNotify) {
@@ -177,51 +214,59 @@ export default function useDaemon({ settings, onNewResult }) {
     } catch(err) {
       console.error('[Daemon] Session error:', err);
     } finally {
+      releaseStream(stream);
       setDaemonStatus('waiting');
     }
-  }, [settings, recordForDuration, analyzeBlob, detectShift, triggerNotification, onNewResult]);
+  }, [recordForDuration, analyzeBlob, detectShift, triggerNotification, onNewResult]);
 
   // ── Start / Stop ──────────────────────────────────────────
-  const startDaemon = useCallback(() => {
-    if (isDaemonActive) return;
-    setIsDaemonActive(true);
-    setDaemonStatus('waiting');
-    recentEmotions.current = [];
-
-    const intervalMs = (settings.intervalMinutes || 15) * 60 * 1000;
-
-    // Show countdown to next session
-    let secsLeft = intervalMs / 1000;
+  const beginCountdown = useCallback((intervalMs) => {
+    clearInterval(countdownRef.current);
+    let secsLeft = Math.ceil(intervalMs / 1000);
     setNextFireIn(secsLeft);
     countdownRef.current = setInterval(() => {
       secsLeft -= 1;
-      setNextFireIn(secsLeft);
+      setNextFireIn(Math.max(0, secsLeft));
     }, 1000);
+  }, []);
 
-    // Run first session immediately after 3s
-    setTimeout(() => runSession(), 3000);
+  const loopRef = useRef(null);
+  loopRef.current = async () => {
+    if (!activeRef.current) return;
+    const intervalMs = (settingsRef.current.intervalMinutes || 15) * 60 * 1000;
 
-    // Then repeat on interval
-    intervalRef.current = setInterval(() => {
-      secsLeft = intervalMs / 1000;
-      setNextFireIn(secsLeft);
-      runSession();
-    }, intervalMs);
+    beginCountdown(intervalMs);
+    await new Promise((resolve) => {
+      timeoutRef.current = setTimeout(resolve, intervalMs);
+    });
 
-    console.log(`[Daemon] Started. Interval: ${settings.intervalMinutes} min, Duration: ${settings.recordDurationMinutes} min`);
-  }, [isDaemonActive, settings, runSession]);
+    if (!activeRef.current) return;
+    clearInterval(countdownRef.current);
+    setNextFireIn(null);
+    await runSession();
+
+    if (!activeRef.current) return;
+    loopRef.current?.();
+  };
+
+  const startDaemon = useCallback(() => {
+    if (isDaemonActive || activeRef.current) return;
+    setIsDaemonActive(true);
+    setDaemonStatus('waiting');
+    recentEmotions.current = [];
+    activeRef.current = true;
+    loopRef.current?.();
+
+    console.log(`[Daemon] Started. Interval: ${settingsRef.current.intervalMinutes} min, Duration: ${settingsRef.current.recordDurationMinutes} min`);
+  }, [isDaemonActive]);
 
   const stopDaemon = useCallback(() => {
-    clearInterval(intervalRef.current);
+    activeRef.current = false;
+    clearTimeout(timeoutRef.current);
     clearInterval(countdownRef.current);
 
     if (recordingRef.current && recordingRef.current.state === 'recording') {
       recordingRef.current.stop();
-    }
-
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop());
-      streamRef.current = null;
     }
 
     setIsDaemonActive(false);
@@ -233,7 +278,8 @@ export default function useDaemon({ settings, onNewResult }) {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      clearInterval(intervalRef.current);
+      activeRef.current = false;
+      clearTimeout(timeoutRef.current);
       clearInterval(countdownRef.current);
     };
   }, []);
@@ -242,6 +288,7 @@ export default function useDaemon({ settings, onNewResult }) {
     isDaemonActive,
     daemonStatus,
     nextFireIn,
+    liveStream,
     startDaemon,
     stopDaemon,
   };

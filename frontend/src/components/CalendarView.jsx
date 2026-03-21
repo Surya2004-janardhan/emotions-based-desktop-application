@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CalendarRange, Sparkles, Brain, TrendingUp, TrendingDown, Clock, Activity, BarChart3 } from 'lucide-react';
 import axios from 'axios';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 const ipc = typeof window !== 'undefined' && window.require
   ? window.require('electron').ipcRenderer
@@ -58,6 +70,25 @@ export default function CalendarView() {
 
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
+  const dominant = useCallback((entries) => {
+    if (!entries.length) return null;
+    const freq = {};
+    entries.forEach((e) => { freq[e] = (freq[e] || 0) + 1; });
+    return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
+  }, []);
+
+  const estimateRowStress = useCallback((row) => {
+    if (typeof row.stress_score === 'number') return row.stress_score;
+    const baseline = STRESS_BASELINE[row.fused_emotion] ?? 0.35;
+    const transition = typeof row.transition_rate === 'number' ? row.transition_rate : 0.25;
+    const stability = typeof row.stability === 'number'
+      ? row.stability
+      : typeof row.emotional_stability === 'number'
+      ? row.emotional_stability
+      : 0.65;
+    return Math.max(0, Math.min(1, baseline + (0.2 * transition) + (0.1 * (1 - stability))));
+  }, []);
+
   // Filter history by selected range
   const filtered = useMemo(() => {
     const now = new Date();
@@ -80,25 +111,97 @@ export default function CalendarView() {
     return hours;
   }, [filtered]);
 
-  // Dominant emotion for a bucket
-  const dominant = (entries) => {
-    if (!entries.length) return null;
-    const freq = {};
-    entries.forEach(e => { freq[e] = (freq[e] || 0) + 1; });
-    return Object.entries(freq).sort((a, b) => b[1] - a[1])[0][0];
-  };
+  const periodBoxes = useMemo(() => {
+    const now = new Date();
+    const byDay = new Map();
+    filtered.forEach((row) => {
+      const date = new Date(row.timestamp);
+      const key = date.toISOString().slice(0, 10);
+      if (!byDay.has(key)) byDay.set(key, []);
+      byDay.get(key).push(row);
+    });
 
-  const estimateRowStress = useCallback((row) => {
-    if (typeof row.stress_score === 'number') return row.stress_score;
-    const baseline = STRESS_BASELINE[row.fused_emotion] ?? 0.35;
-    const transition = typeof row.transition_rate === 'number' ? row.transition_rate : 0.25;
-    const stability = typeof row.stability === 'number'
-      ? row.stability
-      : typeof row.emotional_stability === 'number'
-      ? row.emotional_stability
-      : 0.65;
-    return Math.max(0, Math.min(1, baseline + (0.2 * transition) + (0.1 * (1 - stability))));
-  }, []);
+    const buildDayEntry = (date) => {
+      const key = date.toISOString().slice(0, 10);
+      const rows = byDay.get(key) || [];
+      const dominantEmotion = dominant(rows.map((r) => r.fused_emotion));
+      const avgStress = rows.length > 0
+        ? rows.reduce((sum, row) => sum + estimateRowStress(row), 0) / rows.length
+        : null;
+      return { key, label: date.getDate(), rows, dominantEmotion, avgStress };
+    };
+
+    if (range === 'week') {
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(now);
+        date.setHours(0, 0, 0, 0);
+        date.setDate(now.getDate() - i);
+        days.push(buildDayEntry(date));
+      }
+      return days;
+    }
+
+    if (range === 'month') {
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      return Array.from({ length: daysInMonth }, (_, idx) => {
+        const date = new Date(year, month, idx + 1);
+        return buildDayEntry(date);
+      });
+    }
+
+    return [];
+  }, [filtered, range, estimateRowStress, dominant]);
+
+  const allTimeTrend = useMemo(() => {
+    if (history.length === 0) return null;
+    const sorted = [...history].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const bucket = new Map();
+    sorted.forEach((row) => {
+      const d = new Date(row.timestamp);
+      const key = d.toISOString().slice(0, 10);
+      if (!bucket.has(key)) bucket.set(key, []);
+      bucket.get(key).push(row);
+    });
+    const labels = [];
+    const stressSeries = [];
+    const negSeries = [];
+
+    Array.from(bucket.keys()).sort().forEach((day) => {
+      const rows = bucket.get(day);
+      labels.push(day.slice(5));
+      const avgStress = rows.reduce((sum, row) => sum + estimateRowStress(row), 0) / rows.length;
+      const negRatio = rows.filter((r) => NEGATIVE.includes(r.fused_emotion)).length / rows.length;
+      stressSeries.push(Number(avgStress.toFixed(3)));
+      negSeries.push(Number(negRatio.toFixed(3)));
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Stress Trend',
+          data: stressSeries,
+          borderColor: '#E11D48',
+          backgroundColor: 'rgba(225,29,72,0.18)',
+          tension: 0.35,
+          fill: true,
+          pointRadius: 2,
+        },
+        {
+          label: 'Negative Emotion Ratio',
+          data: negSeries,
+          borderColor: '#3B82F6',
+          backgroundColor: 'rgba(59,130,246,0.12)',
+          tension: 0.35,
+          fill: false,
+          pointRadius: 2,
+        },
+      ],
+    };
+  }, [history, estimateRowStress]);
 
   // Summary stats
   const summary = useMemo(() => {
@@ -352,6 +455,55 @@ export default function CalendarView() {
       )}
 
       {/* Hourly Heatmap */}
+      {(range === 'week' || range === 'month') && periodBoxes.length > 0 && (
+        <div className="panel p-6">
+          <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-5 flex items-center gap-2">
+            <CalendarRange className="w-4 h-4 text-primary" />
+            {range === 'week' ? 'Weekly View (7 Days)' : `Monthly View (${periodBoxes.length} Days)`}
+          </h2>
+          <div className={`grid gap-2 ${range === 'week' ? 'grid-cols-7' : 'grid-cols-7 sm:grid-cols-10 md:grid-cols-12'}`}>
+            {periodBoxes.map((box) => {
+              const color = box.dominantEmotion ? EMOTION_COLORS[box.dominantEmotion] : 'var(--color-surface-raised)';
+              return (
+                <div key={box.key} className="rounded-lg border border-border-subtle p-2 bg-surface-base">
+                  <div className="text-[10px] text-text-muted mb-1">{box.label}</div>
+                  <div className="h-8 rounded-md" style={{ backgroundColor: box.rows.length ? `${color}44` : 'var(--color-surface-raised)' }} />
+                  <div className="mt-1 text-[10px] text-text-secondary truncate capitalize">
+                    {box.dominantEmotion || 'No data'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {range === 'all' && allTimeTrend && (
+        <div className="panel p-6">
+          <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-5 flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" />
+            All-Time Temporal Trend
+          </h2>
+          <div className="h-[320px]">
+            <Line
+              data={allTimeTrend}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                  y: {
+                    min: 0,
+                    max: 1,
+                    ticks: { callback: (v) => `${Math.round(v * 100)}%` },
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {filtered.length > 0 ? (
         <div className="panel p-6">
           <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider mb-5 flex items-center gap-2">
@@ -443,6 +595,8 @@ export default function CalendarView() {
               <thead className="bg-surface-raised border-b border-border-subtle sticky top-0">
                 <tr>
                   <th className="px-5 py-3 font-bold text-text-secondary uppercase tracking-wider">Time</th>
+                  <th className="px-5 py-3 font-bold text-text-secondary uppercase tracking-wider">Record Start</th>
+                  <th className="px-5 py-3 font-bold text-text-secondary uppercase tracking-wider">Record End</th>
                   <th className="px-5 py-3 font-bold text-text-secondary uppercase tracking-wider">Emotion</th>
                   <th className="px-5 py-3 font-bold text-text-secondary uppercase tracking-wider hidden sm:table-cell">Note</th>
                 </tr>
@@ -452,6 +606,12 @@ export default function CalendarView() {
                   <tr key={i} className="hover:bg-surface-raised/60 transition-colors">
                     <td className="px-5 py-3 text-text-muted font-mono whitespace-nowrap">
                       {new Date(row.timestamp).toLocaleString()}
+                    </td>
+                    <td className="px-5 py-3 text-text-muted font-mono whitespace-nowrap">
+                      {row.recording_started_at ? new Date(row.recording_started_at).toLocaleTimeString() : '—'}
+                    </td>
+                    <td className="px-5 py-3 text-text-muted font-mono whitespace-nowrap">
+                      {row.recording_ended_at ? new Date(row.recording_ended_at).toLocaleTimeString() : '—'}
                     </td>
                     <td className="px-5 py-3">
                       <span className="font-bold capitalize" style={{ color: EMOTION_COLORS[row.fused_emotion] || 'inherit' }}>

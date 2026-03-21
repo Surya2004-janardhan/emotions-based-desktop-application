@@ -48,14 +48,17 @@ export default function useProcessing() {
 
       if (data.error) {
         setError(data.error);
+        return null;
       } else {
         setResults(data);
         setProgress(100);
         setStatus('Complete');
+        return data;
       }
     } catch (err) {
       clearInterval(pollRef.current);
       setError(err.response?.data?.error || err.message || 'Processing failed');
+      return null;
     } finally {
       setIsProcessing(false);
     }
@@ -85,14 +88,17 @@ export default function useProcessing() {
 
       if (data.error) {
         setError(data.error);
+        return null;
       } else {
         setResults(data);
         setProgress(100);
         setStatus('Complete');
+        return data;
       }
     } catch (err) {
       clearInterval(pollRef.current);
       setError(err.response?.data?.error || err.message || 'Processing failed');
+      return null;
     } finally {
       setIsProcessing(false);
     }

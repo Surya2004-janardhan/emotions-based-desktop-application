@@ -11,7 +11,7 @@ const STATUS_MAP = {
   'Complete': 'Sequence Complete',
 };
 
-export default function ProcessingLoader({ progress, status }) {
+export default function ProcessingLoader({ progress, status, previewUrl, recordingMeta }) {
   const displayStatus = STATUS_MAP[status] || status || 'Processing...';
 
   let sectionLabel = '';
@@ -25,6 +25,28 @@ export default function ProcessingLoader({ progress, status }) {
   return (
     <div className="w-full max-w-2xl mx-auto animate-fade-up mt-12">
       <div className="panel p-8 space-y-8 bg-surface-base">
+        {previewUrl && (
+          <div className="rounded-xl overflow-hidden border border-border-subtle bg-black">
+            <video
+              src={previewUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full h-[240px] object-cover"
+              style={{ transform: 'scaleX(-1)' }}
+            />
+            <div className="px-4 py-2 bg-black/80 text-xs text-white/90 flex items-center justify-between gap-3">
+              <span>Captured recording is being processed...</span>
+              {recordingMeta?.startedAt && recordingMeta?.endedAt && (
+                <span className="font-mono text-[11px]">
+                  {new Date(recordingMeta.startedAt).toLocaleTimeString()} - {new Date(recordingMeta.endedAt).toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">

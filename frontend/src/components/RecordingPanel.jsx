@@ -95,9 +95,13 @@ export default function RecordingPanel({
   } = recorder;
 
   useEffect(() => {
-    // Try on mount so the live preview appears quickly when permission is available.
-    requestPermission();
-  }, [requestPermission]);
+    return () => {
+      recorder.stopStream?.();
+    };
+    // Intentionally cleanup only on unmount. Depending on `recorder` causes
+    // per-render cleanup and can immediately kill freshly granted streams.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleRecord = async () => {
     if (isRecording) { stopRecording(); }
@@ -142,6 +146,14 @@ export default function RecordingPanel({
                     <Mic className="w-3.5 h-3.5" />
                     Enable Camera and Mic
                   </button>
+                </div>
+              )}
+
+              {!hasPermission && recorder.permissionError && (
+                <div className="absolute bottom-3 left-3 right-3 rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2">
+                  <p className="text-[11px] text-red-600 font-medium">
+                    Permission issue: {recorder.permissionError}
+                  </p>
                 </div>
               )}
 

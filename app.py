@@ -3,15 +3,16 @@ from flask_cors import CORS
 import cv2
 import numpy as np
 import librosa
-from tensorflow import keras
 import requests
 import ffmpeg
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Silence TF warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' # Silence TensorFlow startup logs
+from tensorflow import keras
 import json
 import sqlite3
 from datetime import datetime
 from uuid import uuid4
+import tempfile
 
 app = Flask(__name__)
 CORS(app)
@@ -101,6 +102,8 @@ N_FRAMES = 300  # Number of time frames for MFCC features
 VIDEO_WINDOW_SIZE = 1  # seconds
 TARGET_SIZE = (112, 112)
 NUM_FRAMES = 10
+FACE_CASCADE_PATH = os.path.join(cv2.data.haarcascades, 'haarcascade_frontalface_default.xml')
+FACE_CASCADE = cv2.CascadeClassifier(FACE_CASCADE_PATH) if os.path.exists(FACE_CASCADE_PATH) else None
 
 STRESS_BASELINE = {
     'happy': 0.15,
@@ -458,6 +461,46 @@ def sample_frames(video_path):
     cap.release()
     return np.array(sequences) if sequences else None
 
+def detect_human_face_in_video(video_path, max_checks=24, min_hits=2):
+    """Safety gate: return True only if a human face is detected in uploaded content."""
+    if FACE_CASCADE is None:
+        print("Face cascade unavailable. Skipping strict face gate.")
+        return True, 0
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return False, 0
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+    if total_frames <= 0:
+        cap.release()
+        return False, 0
+
+    sample_count = min(max_checks, total_frames)
+    frame_indices = np.linspace(0, max(0, total_frames - 1), sample_count).astype(int)
+    hits = 0
+
+    for idx in frame_indices:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(idx))
+        ok, frame = cap.read()
+        if not ok or frame is None:
+            continue
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = FACE_CASCADE.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=4,
+            minSize=(40, 40),
+        )
+        if len(faces) > 0:
+            hits += 1
+            if hits >= min_hits:
+                cap.release()
+                return True, hits
+
+    cap.release()
+    return False, hits
+
 DEFAULT_PROGRESS_STATE = {"progress": 0, "status": "Ready", "results": None}
 progress_states = {}
 
@@ -497,11 +540,12 @@ def process():
         return jsonify({'error': 'Models not loaded'})
 
     try:
-        # Save uploaded video file
+        # Save uploaded video file (per-job unique temp paths to avoid collisions)
         video_file = request.files['video']
-        raw_video_path = 'temp_raw_video.webm'
-        video_path = 'temp_video.mp4'
-        audio_path = 'temp_audio.wav'
+        tmp_dir = tempfile.gettempdir()
+        raw_video_path = os.path.join(tmp_dir, f'emotionai_{job_id}_raw.webm')
+        video_path = os.path.join(tmp_dir, f'emotionai_{job_id}_norm.mp4')
+        audio_path = os.path.join(tmp_dir, f'emotionai_{job_id}_audio.wav')
         
         print(f"Saving raw video to {raw_video_path}")
         video_file.save(raw_video_path)
@@ -520,8 +564,29 @@ def process():
             )
             print("Video normalized successfully")
         except Exception as e:
-            print(f"Video normalization failed: {e}. Falling back to raw file.")
-            video_path = raw_video_path
+            print(f"Video normalization failed: {e}")
+            for path in [raw_video_path]:
+                if path and os.path.exists(path):
+                    os.remove(path)
+            update_job(job_id, progress=100, status="Error: unable to normalize video", results=None)
+            return jsonify({
+                'error': 'Unable to decode recorded video stream. Please retry with stable camera input.',
+                'job_id': job_id
+            })
+
+        # 1.5 Safety Gate: proceed only if a human face is present.
+        update_job(job_id, status="Validating Human Presence", progress=8)
+        has_face, face_hits = detect_human_face_in_video(video_path)
+        if not has_face:
+            print(f"FACE_GATE_REJECTED: No valid human face detected (hits={face_hits}).")
+            for path in [raw_video_path, video_path, audio_path]:
+                if path and os.path.exists(path):
+                    os.remove(path)
+            update_job(job_id, progress=100, status="Rejected: no human face detected", results=None)
+            return jsonify({
+                'error': 'No clear human face detected in the recording. Please ensure your face is visible and try again.',
+                'job_id': job_id
+            })
 
         # 2. Extract audio from video
         update_job(job_id, status="Extracting Audio", progress=10)
@@ -755,6 +820,15 @@ def process():
         return jsonify(final_result)
 
     except Exception as e:
+        # Best-effort cleanup of per-job temp artifacts
+        try:
+            tmp_dir = tempfile.gettempdir()
+            for suffix in ['_raw.webm', '_norm.mp4', '_audio.wav']:
+                candidate = os.path.join(tmp_dir, f'emotionai_{job_id}{suffix}')
+                if os.path.exists(candidate):
+                    os.remove(candidate)
+        except Exception:
+            pass
         update_job(job_id, status=f"Error: {str(e)}")
         return jsonify({'error': str(e), 'job_id': job_id})
 

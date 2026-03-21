@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, nativeImage, shell, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const net = require('net');
@@ -6,9 +6,10 @@ const { spawn } = require('child_process');
 
 // Linux machines without proper VAAPI support can spam GPU init errors.
 if (process.platform === 'linux') {
-  app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-features', 'VaapiVideoDecoder,VaapiVideoEncoder');
+  app.commandLine.appendSwitch('disable-features', 'VaapiVideoDecoder,VaapiVideoEncoder,VideoCaptureUseGpuMemoryBuffer');
 }
+// Allow app-managed support audio playback without requiring explicit user gesture each time.
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 // ─── State ────────────────────────────────────────────────────
 let mainWindow = null;
@@ -153,6 +154,18 @@ async function startBackend() {
     pythonProcess.stderr.on('data', (data) => {
       const text = data.toString();
       console.error(`[Flask Error]: ${text}`);
+      if (text.includes('Address already in use') || text.includes('Port 5000 is in use')) {
+        console.log('[Backend] Port 5000 already in use. Reusing existing backend instance.');
+        clearTimeout(readyTimer);
+        pythonReady = true;
+        pythonReadyCallbacks.forEach(cb => cb());
+        pythonReadyCallbacks = [];
+        resolve();
+        if (pythonProcess && !pythonProcess.killed) {
+          pythonProcess.kill('SIGTERM');
+        }
+        return;
+      }
       if (text.includes("ModuleNotFoundError: No module named 'flask'")) {
         console.error('[Backend] Flask dependency missing. Run backend setup and install requirements in your Python environment.');
       }
@@ -309,12 +322,22 @@ function createWindow() {
   });
 
   const indexPath = path.join(__dirname, 'dist', 'index.html');
-  if (fs.existsSync(indexPath) && !process.argv.includes('--dev')) {
+  const devUrl = 'http://127.0.0.1:5173';
+
+  // In local development (not packaged), always prefer Vite dev server so UI changes reflect immediately.
+  if (!app.isPackaged) {
+    mainWindow.loadURL(devUrl).then(() => {
+      console.log(`[Window] Loaded dev server: ${devUrl}`);
+    }).catch((e) => {
+      console.error('[Window] Dev server unavailable, falling back to dist build:', e.message);
+      if (fs.existsSync(indexPath)) {
+        mainWindow.loadFile(indexPath).catch(err => console.error('[Window] Dist fallback failed:', err));
+      }
+    });
+  } else if (fs.existsSync(indexPath)) {
     mainWindow.loadFile(indexPath).catch(e => console.error('[Window]', e));
   } else {
-    mainWindow.loadURL('http://localhost:5173').catch(e => {
-      console.error('[Window] Ensure vite dev is running:', e);
-    });
+    console.error('[Window] Packaged app missing dist/index.html');
   }
 
   // Minimize to tray instead of closing
@@ -329,6 +352,25 @@ function createWindow() {
   mainWindow.on('ready-to-show', () => {
     // Only show if user explicitly launches (not autostart)
     // Tray click will show the window
+  });
+}
+
+function setupMediaPermissions() {
+  const ses = session.defaultSession;
+  if (!ses) return;
+
+  ses.setPermissionCheckHandler((_webContents, permission, requestingOrigin) => {
+    if (permission !== 'media') return true;
+    return requestingOrigin.startsWith('http://127.0.0.1:5173') || requestingOrigin.startsWith('file://');
+  });
+
+  ses.setPermissionRequestHandler((_webContents, permission, callback, details) => {
+    if (permission === 'media') {
+      const allowedOrigin = details.requestingUrl.startsWith('http://127.0.0.1:5173') || details.requestingUrl.startsWith('file://');
+      callback(allowedOrigin);
+      return;
+    }
+    callback(true);
   });
 }
 
@@ -375,6 +417,7 @@ app.whenReady().then(async () => {
 
   initPaths(); // Must be first — sets up file paths
 
+  setupMediaPermissions();
   setupIPC();
   createWindow();
   createTray();
