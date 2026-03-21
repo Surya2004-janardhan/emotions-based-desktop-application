@@ -1,61 +1,60 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import axios from 'axios';
 
 export default function useProcessing() {
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [status, setStatus] = useState('Ready');
   const [results, setResults] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState('');
   const pollRef = useRef(null);
 
   const startPolling = useCallback((jobId) => {
+    clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const { data } = await axios.get(`/status?job_id=${encodeURIComponent(jobId)}`);
+        const res = await axios.get(`/progress/${jobId}`);
+        const data = res.data || {};
         setProgress(data.progress || 0);
-        setStatus(data.status || '');
-        if (data.progress >= 100) {
-          clearInterval(pollRef.current);
-        }
+        setStatus(data.status || 'Processing...');
       } catch {
-        // silently continue polling
+        // Ignore polling hiccups and keep waiting for the final response.
       }
-    }, 600);
+    }, 700);
   }, []);
 
   const processVideo = useCallback(async (blob) => {
     setIsProcessing(true);
+    setError('');
+    setResults(null);
     setProgress(0);
     setStatus('Uploading...');
-    setResults(null);
-    setError(null);
-
-    const jobId = globalThis.crypto?.randomUUID?.() || `job-${Date.now()}`;
-    const formData = new FormData();
-    formData.append('video', blob, 'recording.webm');
-    formData.append('job_id', jobId);
-
-    startPolling(jobId);
 
     try {
-      const { data } = await axios.post('/process', formData, {
+      const formData = new FormData();
+      formData.append('video', blob, 'capture.webm');
+
+      const startRes = await axios.post('/process', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000,
       });
+      const data = startRes.data || {};
+      if (data.job_id) startPolling(data.job_id);
 
       clearInterval(pollRef.current);
 
       if (data.error) {
         setError(data.error);
+        return null;
       } else {
         setResults(data);
         setProgress(100);
         setStatus('Complete');
+        return data;
       }
     } catch (err) {
       clearInterval(pollRef.current);
       setError(err.response?.data?.error || err.message || 'Processing failed');
+      return null;
     } finally {
       setIsProcessing(false);
     }
@@ -63,36 +62,36 @@ export default function useProcessing() {
 
   const processFile = useCallback(async (file) => {
     setIsProcessing(true);
+    setError('');
+    setResults(null);
     setProgress(0);
     setStatus('Uploading...');
-    setResults(null);
-    setError(null);
-
-    const jobId = globalThis.crypto?.randomUUID?.() || `job-${Date.now()}`;
-    const formData = new FormData();
-    formData.append('video', file);
-    formData.append('job_id', jobId);
-
-    startPolling(jobId);
 
     try {
-      const { data } = await axios.post('/process', formData, {
+      const formData = new FormData();
+      formData.append('video', file);
+
+      const startRes = await axios.post('/process', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000,
       });
+      const data = startRes.data || {};
+      if (data.job_id) startPolling(data.job_id);
 
       clearInterval(pollRef.current);
 
       if (data.error) {
         setError(data.error);
+        return null;
       } else {
         setResults(data);
         setProgress(100);
         setStatus('Complete');
+        return data;
       }
     } catch (err) {
       clearInterval(pollRef.current);
       setError(err.response?.data?.error || err.message || 'Processing failed');
+      return null;
     } finally {
       setIsProcessing(false);
     }
@@ -100,17 +99,23 @@ export default function useProcessing() {
 
   const reset = useCallback(() => {
     clearInterval(pollRef.current);
-    setProgress(0);
-    setStatus('');
     setIsProcessing(false);
+    setProgress(0);
+    setStatus('Ready');
     setResults(null);
-    setError(null);
+    setError('');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearInterval(pollRef.current);
+    };
   }, []);
 
   return {
+    isProcessing,
     progress,
     status,
-    isProcessing,
     results,
     error,
     processVideo,

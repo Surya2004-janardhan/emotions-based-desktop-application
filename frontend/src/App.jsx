@@ -22,36 +22,103 @@ const ipc = typeof window !== 'undefined' && window.require
   : null;
 
 export default function App() {
-  const recorder    = useMediaRecorder();
-  const processing  = useProcessing();
+  const recorder = useMediaRecorder();
+  const processing = useProcessing();
   const { settings, loaded, save } = useSettings();
 
   const [currentTab, setCurrentTab] = useState('dashboard');
-  const [phase, setPhase] = useState('idle');           // idle | processing | results
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatKey, setChatKey] = useState(0);
+  const [phase, setPhase] = useState('idle');
+  const [manualMeta, setManualMeta] = useState(null);
+  const [manualPreviewUrl, setManualPreviewUrl] = useState(null);
   const [lastDaemonResult, setLastDaemonResult] = useState(null);
+  const [musicNowPlaying, setMusicNowPlaying] = useState(null);
+  const daemonVideoRef = useRef(null);
   const audioRef = useRef(null);
+  const musicQueueRef = useRef([]);
+  const musicPlayingRef = useRef(false);
   const activeInsight = processing.results || lastDaemonResult;
 
-  // ── Daemon ─────────────────────────────────────────────────
-  const { isDaemonActive, daemonStatus, nextFireIn, startDaemon, stopDaemon } = useDaemon({
+  const tryPlayNext = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio || musicPlayingRef.current) return;
+    const nextTrack = musicQueueRef.current.shift();
+    if (!nextTrack) return;
+
+    musicPlayingRef.current = true;
+    setMusicNowPlaying(nextTrack);
+
+    const src = nextTrack.musicPath.startsWith('file://')
+      ? nextTrack.musicPath
+      : `file://${encodeURI(nextTrack.musicPath)}`;
+
+    audio.src = src;
+    audio.play().catch(() => {
+      musicPlayingRef.current = false;
+      setMusicNowPlaying(null);
+    });
+  }, []);
+
+  const { isDaemonActive, daemonStatus, nextFireIn, liveStream, startDaemon, stopDaemon } = useDaemon({
     settings,
     onNewResult: (result) => setLastDaemonResult(result),
+    onShiftDetected: ({ emotion, musicPath, autoPlay }) => {
+      if (!autoPlay || !musicPath) return;
+      musicQueueRef.current.push({ emotion, musicPath, at: Date.now() });
+      tryPlayNext();
+    },
   });
 
-  // ── Auto Mode sync from settings ──────────────────────────
   useEffect(() => {
     if (!loaded) return;
     if (settings.autoMode && !isDaemonActive) startDaemon();
     if (!settings.autoMode && isDaemonActive) stopDaemon();
   }, [loaded, settings.autoMode]); // eslint-disable-line
 
-  // ── Manual analysis ───────────────────────────────────────
+  useEffect(() => {
+    if (!daemonVideoRef.current) return;
+    daemonVideoRef.current.srcObject = liveStream || null;
+  }, [liveStream, daemonStatus]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return undefined;
+
+    const handleStop = () => {
+      musicPlayingRef.current = false;
+      setMusicNowPlaying(null);
+      setTimeout(() => tryPlayNext(), 150);
+    };
+    audio.addEventListener('ended', handleStop);
+    audio.addEventListener('pause', handleStop);
+
+    return () => {
+      audio.removeEventListener('ended', handleStop);
+      audio.removeEventListener('pause', handleStop);
+    };
+  }, [tryPlayNext]);
+
+  useEffect(() => {
+    return () => {
+      if (manualPreviewUrl) URL.revokeObjectURL(manualPreviewUrl);
+    };
+  }, [manualPreviewUrl]);
+
   const handleAnalyze = useCallback(async (input, type) => {
     setPhase('processing');
+    const meta = recorder.lastCaptureMeta || {
+      startedAt: new Date(Date.now() - 11000).toISOString(),
+      endedAt: new Date().toISOString(),
+    };
+    setManualMeta(meta);
 
-    // Start backend on demand before processing
+    if (manualPreviewUrl) {
+      URL.revokeObjectURL(manualPreviewUrl);
+      setManualPreviewUrl(null);
+    }
+    if (type === 'blob' && input instanceof Blob) {
+      setManualPreviewUrl(URL.createObjectURL(input));
+    }
+
     if (ipc) {
       const status = await ipc.invoke('backend-status');
       if (!status.running) {
@@ -60,31 +127,43 @@ export default function App() {
       }
     }
 
-    if (type === 'file') await processing.processFile(input);
-    else await processing.processVideo(input);
+    let result = null;
+    if (type === 'file') result = await processing.processFile(input);
+    else result = await processing.processVideo(input);
+
+    if (ipc && result && !result.error) {
+      await ipc.invoke('save-result', {
+        ...result,
+        recording_started_at: meta.startedAt,
+        recording_ended_at: meta.endedAt,
+      });
+    }
 
     setPhase('results');
-  }, [processing]);
+  }, [processing, recorder.lastCaptureMeta, manualPreviewUrl]);
 
   const handleReset = () => {
     processing.reset();
+    if (manualPreviewUrl) {
+      URL.revokeObjectURL(manualPreviewUrl);
+      setManualPreviewUrl(null);
+    }
+    setManualMeta(null);
     setPhase('idle');
-    setChatKey(k => k + 1);
   };
 
-  // ── Format countdown ──────────────────────────────────────
   const fmtCountdown = (secs) => {
     if (!secs) return '';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
-    return `${m}m ${s.toString().padStart(2,'0')}s`;
+    return `${m}m ${s.toString().padStart(2, '0')}s`;
   };
 
-  // ── Sidebar nav items ─────────────────────────────────────
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: 'calendar',  label: 'History', icon: <CalendarRange className="w-4 h-4" /> },
-    { id: 'settings',  label: 'Settings', icon: <SlidersHorizontal className="w-4 h-4" /> },
+    { id: 'calendar', label: 'History', icon: <CalendarRange className="w-4 h-4" /> },
+    { id: 'assistant', label: 'AI Assistant', icon: <MessageCircle className="w-4 h-4" /> },
+    { id: 'settings', label: 'Settings', icon: <SlidersHorizontal className="w-4 h-4" /> },
   ];
 
   if (!loaded) return (
@@ -100,9 +179,7 @@ export default function App() {
     <div className="flex h-screen overflow-hidden bg-bg-base text-text-primary">
       <InterventionPopup results={activeInsight} />
 
-      {/* ── Sidebar ─────────────────────────────────────── */}
       <aside className="w-56 shrink-0 flex flex-col border-r border-border-subtle bg-surface-base">
-        {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border-subtle">
           <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
             <Brain className="w-5 h-5 text-primary" strokeWidth={2.5} />
@@ -112,7 +189,6 @@ export default function App() {
           </span>
         </div>
 
-        {/* Nav links */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map(({ id, label, icon }) => (
             <button
@@ -133,7 +209,6 @@ export default function App() {
           ))}
         </nav>
 
-        {/* Auto Mode toggle */}
         <div className="px-3 py-4 border-t border-border-subtle">
           <div className="px-3 py-3 rounded-xl bg-surface-raised border border-border-subtle">
             <div className="flex items-center justify-between mb-2">
@@ -161,6 +236,11 @@ export default function App() {
                 {nextFireIn && daemonStatus === 'waiting' && (
                   <p className="text-[10px] text-text-muted">Next: {fmtCountdown(nextFireIn)}</p>
                 )}
+                {musicNowPlaying && (
+                  <p className="text-[10px] text-primary font-semibold">
+                    Playing support track for {musicNowPlaying.emotion}
+                  </p>
+                )}
               </div>
             ) : (
               <p className="text-[10px] text-text-muted leading-relaxed">
@@ -170,30 +250,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* Chat button */}
-        <div className="px-3 pb-4">
-          <button
-            onClick={() => setChatOpen(o => !o)}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
-              chatOpen ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:bg-surface-raised hover:text-text-primary'
-            }`}
-          >
-            <MessageCircle className="w-4 h-4" />
-            AI Assistant
-          </button>
-        </div>
-
-        {/* Footer */}
         <div className="px-5 py-3 text-[9px] text-text-muted border-t border-border-subtle">
           D7 · Final Year Project
         </div>
       </aside>
 
-      {/* ── Main Content ─────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-6 py-8">
-
-          {/* Dashboard */}
           {currentTab === 'dashboard' && (
             <div className="space-y-8 animate-fade-up">
               <div>
@@ -210,7 +273,42 @@ export default function App() {
               )}
 
               {phase === 'processing' && processing.isProcessing && (
-                <ProcessingLoader progress={processing.progress} status={processing.status} />
+                <ProcessingLoader
+                  progress={processing.progress}
+                  status={processing.status}
+                  previewUrl={manualPreviewUrl}
+                  recordingMeta={manualMeta}
+                />
+              )}
+
+              {isDaemonActive && (daemonStatus === 'recording' || daemonStatus === 'processing') && (
+                <div className="panel p-5 border border-primary/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Activity className="w-4 h-4 text-primary animate-pulse" />
+                    <span className="text-xs font-bold uppercase tracking-widest text-text-primary">
+                      {daemonStatus === 'recording' ? 'Background Recording Live' : 'Recording Complete · Processing'}
+                    </span>
+                  </div>
+                  <div className="relative rounded-xl overflow-hidden border border-border-subtle bg-black/70">
+                    {daemonStatus === 'recording' ? (
+                      <video
+                        ref={daemonVideoRef}
+                        autoPlay
+                        muted
+                        playsInline
+                        className="w-full max-h-[300px] object-cover"
+                        style={{ transform: 'scaleX(-1)' }}
+                      />
+                    ) : (
+                      <div className="h-[180px] flex items-center justify-center text-sm text-white/80">
+                        Processing captured stream in background...
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3 px-3 py-1 rounded-md bg-black/60 text-[11px] font-bold text-white uppercase tracking-wider">
+                      {daemonStatus}
+                    </div>
+                  </div>
+                </div>
               )}
 
               {processing.error && (
@@ -240,7 +338,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* Latest Daemon Result inline */}
               {lastDaemonResult && !processing.results && phase === 'idle' && (
                 <div className="panel p-5 border border-border-subtle animate-fade-up">
                   <div className="flex items-center gap-2 mb-3">
@@ -261,22 +358,22 @@ export default function App() {
             </div>
           )}
 
-          {/* Calendar / History */}
           {currentTab === 'calendar' && (
             <CalendarView />
           )}
 
-          {/* Settings */}
           {currentTab === 'settings' && (
             <SettingsView settings={settings} onSave={save} />
+          )}
+
+          {currentTab === 'assistant' && (
+            <div className="h-[calc(100vh-8rem)] min-h-[560px] panel overflow-hidden">
+              <Chatbot results={activeInsight} isOpen mode="page" />
+            </div>
           )}
         </div>
       </main>
 
-      {/* Chatbot overlay */}
-      <Chatbot key={chatKey} results={activeInsight} isOpen={chatOpen} onClose={() => setChatOpen(false)} />
-
-      {/* Hidden audio for intervention playback */}
       <audio ref={audioRef} className="hidden" />
     </div>
   );
