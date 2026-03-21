@@ -22,7 +22,8 @@
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 127.0.0.1 --port 5173 --strictPort",
+    "dev:clean-ports": "bash -lc 'fuser -k 5000/tcp 5173/tcp || true'",
     "electron:start": "concurrently \"npm run dev\" \"wait-on tcp:5173 && npm run electron:run\"",
     "electron:dev": "npm run electron:start",
     "electron:run": "node ./scripts/run-electron.cjs",

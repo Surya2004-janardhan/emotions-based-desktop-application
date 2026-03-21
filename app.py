@@ -961,8 +961,8 @@ def chat():
         data = request.get_json()
         user_message = data.get('message', '')
         results_context = data.get('context', {})
-        history = data.get('history', [])[-10:]  # keep last 10 messages
-        analysis_history = data.get('analysis_history', [])[-20:]
+        history = data.get('history', [])[-80:]
+        analysis_history = data.get('analysis_history', [])[:500]
 
         # Build context summary from results
         ctx_parts = []
@@ -983,8 +983,29 @@ def chat():
                 ctx_parts.append(f"Distribution: {json.dumps(results_context['emotion_distribution'])}")
 
         if analysis_history:
+            sorted_history = sorted(analysis_history, key=lambda row: row.get('timestamp', ''))
+            emotions = [row.get('fused_emotion', 'unknown') for row in sorted_history]
+            stress_levels = [row.get('stress_label', 'unknown') for row in sorted_history]
+            high_stress_count = sum(1 for s in stress_levels if s == 'high')
+            moderate_stress_count = sum(1 for s in stress_levels if s == 'moderate')
+            low_stress_count = sum(1 for s in stress_levels if s == 'low')
+
+            from collections import Counter
+            dominant_emotion = Counter(emotions).most_common(1)[0][0] if emotions else 'unknown'
+            shifts = sum(1 for i in range(1, len(emotions)) if emotions[i] != emotions[i-1])
+
+            ctx_parts.append(
+                "All Runs Summary: "
+                f"sessions={len(sorted_history)}, "
+                f"dominant_emotion={dominant_emotion}, "
+                f"high_stress={high_stress_count}, "
+                f"moderate_stress={moderate_stress_count}, "
+                f"low_stress={low_stress_count}, "
+                f"major_emotion_shifts={shifts}."
+            )
+
             history_lines = []
-            for row in analysis_history:
+            for row in sorted_history[-120:]:
                 history_lines.append(
                     f"{row.get('timestamp', 'Unknown time')}: "
                     f"emotion={row.get('fused_emotion', 'unknown')}, "
@@ -1009,7 +1030,7 @@ How to behave:
 - Answer like a supportive personal AI for a working employee who spends long hours in front of a laptop.
 - Base your reply on the user's latest emotional analysis and recent time-based pattern.
 - Do NOT sound clinical, robotic, or overly dramatic.
-- Keep responses SHORT, warm, and practical, usually 2 to 4 sentences.
+- Keep responses warm and practical. For normal questions use 2 to 4 sentences. For trend questions or when the user asks for detail, give 1 short paragraph plus action points.
 - If the user asks about trends, mention day/week/month patterns when present in the context.
 - Give small actions the user can do during work: breathe, stretch, hydrate, walk, pause, reduce tabs, take one task at a time.
 - If asked directly about stress, explain it gently using the estimated stress level and emotional changes over time.
@@ -1027,7 +1048,7 @@ How to behave:
             "model": "llama-3.3-70b-versatile",
             "messages": messages,
             "temperature": 0.7,
-            "max_tokens": 200
+            "max_tokens": 400
         }
         response = requests.post(GROQ_URL, headers=headers, json=payload)
         if response.status_code == 200:

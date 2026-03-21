@@ -1,13 +1,13 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, Notification, nativeImage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const net = require('net');
 const { spawn } = require('child_process');
 
 // Linux machines without proper VAAPI support can spam GPU init errors.
 if (process.platform === 'linux') {
   app.disableHardwareAcceleration();
-  app.commandLine.appendSwitch('disable-features', 'VaapiVideoDecoder,VaapiVideoEncoder,UseChromeOSDirectVideoDecoder');
-  app.commandLine.appendSwitch('use-gl', 'swiftshader');
+  app.commandLine.appendSwitch('disable-features', 'VaapiVideoDecoder,VaapiVideoEncoder');
 }
 
 // ─── State ────────────────────────────────────────────────────
@@ -58,6 +58,26 @@ const FLASK_URL = 'http://127.0.0.1:5000';
 const BACKEND_CWD = path.join(__dirname, '..');
 const ROOT_CWD = BACKEND_CWD;
 
+function isBackendListening(port = 5000, host = '127.0.0.1', timeoutMs = 600) {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    let settled = false;
+
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(value);
+    };
+
+    socket.setTimeout(timeoutMs);
+    socket.once('connect', () => finish(true));
+    socket.once('timeout', () => finish(false));
+    socket.once('error', () => finish(false));
+    socket.connect(port, host);
+  });
+}
+
 function resolvePythonCommand() {
   if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
 
@@ -87,9 +107,15 @@ function resolvePythonCommand() {
   return 'python3';
 }
 
-function startBackend() {
+async function startBackend() {
   if (pythonProcess && !pythonProcess.killed) {
     console.log('[Backend] Already running');
+    return Promise.resolve();
+  }
+
+  if (await isBackendListening()) {
+    console.log('[Backend] Existing backend detected on 127.0.0.1:5000. Reusing it.');
+    pythonReady = true;
     return Promise.resolve();
   }
 
@@ -220,7 +246,10 @@ function setupIPC() {
     return { ok: true };
   });
 
-  ipcMain.handle('backend-status', () => ({ running: !!pythonProcess && pythonReady }));
+  ipcMain.handle('backend-status', async () => {
+    const running = (!!pythonProcess && pythonReady) || (await isBackendListening());
+    return { running };
+  });
 
   // Native OS Notification
   ipcMain.handle('notify-shift', (_e, { emotion, autoPlay, musicPath }) => {
@@ -260,6 +289,7 @@ function setupIPC() {
     if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
   });
 }
+
 
 // ─── Create Window ────────────────────────────────────────────
 function createWindow() {
