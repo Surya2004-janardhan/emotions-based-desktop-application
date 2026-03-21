@@ -61,7 +61,9 @@ function startBackend() {
     pythonReady = false;
     pythonReadyCallbacks = [];
 
-    pythonProcess = spawn('python', ['app.py'], { cwd: BACKEND_CWD });
+    // Linux environments often provide `python3` instead of `python`.
+    const pythonCmd = process.platform === 'win32' ? 'python' : (process.env.PYTHON_BIN || 'python3');
+    pythonProcess = spawn(pythonCmd, ['app.py'], { cwd: BACKEND_CWD });
 
     const readyTimer = setTimeout(() => {
       // Assume ready after 8 seconds even if we miss the stdout signal
