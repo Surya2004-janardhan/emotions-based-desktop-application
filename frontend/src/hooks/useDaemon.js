@@ -329,6 +329,7 @@ export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
 
   const startDaemon = useCallback(() => {
     if (isDaemonActive || activeRef.current) return;
+    clearPendingWait();
     setIsDaemonActive(true);
     recentEmotions.current = [];
     activeRef.current = true;
@@ -336,6 +337,8 @@ export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
       const { bothGranted, state } = await evaluateMediaAccess();
       if (!activeRef.current) return;
       if (!bothGranted) {
+        clearPendingWait();
+        setNextFireIn(null);
         setDaemonStatus('permission_required');
         logInfo('daemon', 'daemon waiting for immediate permission grant', state);
         return;
@@ -346,7 +349,7 @@ export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
 
     console.log(`[Daemon] Started. Interval: ${settingsRef.current.intervalMinutes} min, Duration: ${settingsRef.current.recordDurationMinutes} min`);
     logInfo('daemon', 'daemon started', { intervalMinutes: settingsRef.current.intervalMinutes, recordDurationMinutes: settingsRef.current.recordDurationMinutes });
-  }, [isDaemonActive, evaluateMediaAccess]);
+  }, [isDaemonActive, evaluateMediaAccess, clearPendingWait]);
 
   const stopDaemon = useCallback(() => {
     logInfo('daemon', 'daemon stop requested');

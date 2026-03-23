@@ -117,24 +117,26 @@ export default function RecordingPanel({
   return (
     <div className="w-full max-w-3xl mx-auto animate-fade-up">
       <div className="relative">
-        <div className="overflow-hidden rounded-[28px] border border-primary/20 bg-gradient-to-br from-[#0b4f8a] via-[#0f6db0] to-[#63b3ed] shadow-[0_24px_80px_rgba(14,116,214,0.28)]">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/15 bg-white/8 backdrop-blur-xl">
+        <div className="panel overflow-hidden rounded-[28px] border-primary/20 shadow-[0_24px_80px_rgba(59,130,246,0.12)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,197,253,0.28),transparent_38%),radial-gradient(circle_at_bottom_left,rgba(219,234,254,0.8),transparent_32%)] pointer-events-none" />
+
+          <div className="relative flex items-center justify-between px-5 py-4 border-b border-primary/10 bg-white/80 backdrop-blur-xl">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-blue-100">Live Capture</p>
-              <h2 className="text-lg font-black text-white">Manual Stress Check</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">Capture Workspace</p>
+              <h2 className="text-lg font-black text-text-primary">Manual Stress Check</h2>
             </div>
             <div className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
               isRecording
-                ? 'bg-red-500/15 text-red-100 border-red-200/40'
+                ? 'bg-red-50 text-red-600 border-red-200'
                 : hasPermission
-                  ? 'bg-emerald-500/15 text-emerald-50 border-emerald-100/35'
-                  : 'bg-white/12 text-white/80 border-white/20'
+                  ? 'bg-primary/10 text-primary border-primary/20'
+                  : 'bg-surface-raised text-text-secondary border-border-subtle'
             }`}>
               {isRecording ? 'Recording' : hasPermission ? 'Ready' : 'Permission Needed'}
             </div>
           </div>
 
-          <div className="relative bg-white/8 flex items-center justify-center min-h-[360px]" style={{ aspectRatio: '16/9' }}>
+          <div className="relative flex items-center justify-center min-h-[360px] px-8 py-10" style={{ aspectRatio: '16/9' }}>
             {hasPermission ? (
               <>
                 <video
@@ -145,37 +147,46 @@ export default function RecordingPanel({
                   className="hidden"
                 />
                 {isRecording ? (
-                  <div className="text-center space-y-5 p-8 max-w-sm">
-                    <div className="w-20 h-20 mx-auto rounded-full border-4 border-white/25 border-t-white animate-spin" />
+                  <div className="text-center space-y-5 max-w-md">
+                    <div className="relative w-24 h-24 mx-auto">
+                      <div className="absolute inset-0 rounded-full bg-primary/12 animate-pulse-ring" />
+                      <div className="relative w-24 h-24 rounded-full border border-primary/20 bg-white shadow-lg flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                      </div>
+                    </div>
                     <div className="space-y-2">
-                      <p className="text-white text-base font-bold">Recording is active</p>
-                      <p className="text-white/80 text-sm leading-relaxed">
-                        Camera and microphone are capturing in the background. Keep the app open until you stop this session.
+                      <p className="text-text-primary text-base font-bold">Background capture is running</p>
+                      <p className="text-text-secondary text-sm leading-relaxed">
+                        The app is collecting camera and microphone input in the background for this session.
                       </p>
+                    </div>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                      Session in progress
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center space-y-4 p-8 max-w-sm">
-                    <div className="w-14 h-14 mx-auto rounded-2xl bg-white/12 border border-white/20 flex items-center justify-center">
-                      <Camera className="w-7 h-7 text-white/80" />
+                  <div className="text-center space-y-4 max-w-md">
+                    <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 border border-primary/15 flex items-center justify-center shadow-sm">
+                      <Camera className="w-8 h-8 text-primary" />
                     </div>
                     <div className="space-y-2">
-                      <p className="text-white text-sm font-semibold">Camera and microphone are ready.</p>
-                      <p className="text-white/75 text-xs leading-relaxed">
-                        Start capture when you want to begin a manual stress check. Your live camera view stays hidden on the dashboard.
+                      <p className="text-text-primary text-sm font-semibold">Devices are ready for a manual check.</p>
+                      <p className="text-text-secondary text-xs leading-relaxed">
+                        Start capture when you want to begin. The app keeps the camera view hidden and only shows simple session state here.
                       </p>
                     </div>
                   </div>
                 )}
               </>
             ) : (
-              <div className="text-center space-y-4 p-8 max-w-sm">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-white/12 border border-white/20 flex items-center justify-center">
-                  <Camera className="w-7 h-7 text-white/80" />
+              <div className="text-center space-y-4 max-w-md">
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-primary/10 border border-primary/15 flex items-center justify-center shadow-sm">
+                  <Camera className="w-8 h-8 text-primary" />
                 </div>
                 <div className="space-y-2">
-                  <p className="text-white text-sm font-semibold">Camera and microphone access is required for analysis.</p>
-                  <p className="text-white/75 text-xs leading-relaxed">
+                  <p className="text-text-primary text-sm font-semibold">Camera and microphone access is required.</p>
+                  <p className="text-text-secondary text-xs leading-relaxed">
                     We only start once both devices are available, and the app stays paused if another meeting app is using them.
                   </p>
                 </div>
@@ -190,8 +201,8 @@ export default function RecordingPanel({
             )}
 
             {!hasPermission && recorder.permissionError && (
-              <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-red-500/15 border border-red-200/35 px-3 py-2">
-                <p className="text-[11px] text-red-50 font-medium">
+              <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-red-50 border border-red-200 px-3 py-2">
+                <p className="text-[11px] text-red-600 font-medium">
                   Permission issue: {recorder.permissionError}
                 </p>
               </div>
@@ -199,17 +210,17 @@ export default function RecordingPanel({
 
             {isRecording && (
               <>
-                <div className="absolute inset-0 bg-primary/10 pointer-events-none" />
-                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/40 backdrop-blur-md border border-white/20">
+                <div className="absolute inset-0 bg-primary/4 pointer-events-none" />
+                <div className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 backdrop-blur-md border border-primary/15 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-                  <span className="text-[11px] font-bold text-white uppercase tracking-wider">Session Live</span>
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Session Live</span>
                 </div>
               </>
             )}
             <AudioVisualizer stream={recorder.stream} />
           </div>
 
-          <div className="px-6 py-6 bg-white/8 backdrop-blur-md border-t border-white/15 space-y-4">
+          <div className="relative px-6 py-6 bg-gradient-to-r from-white to-primary/5 border-t border-primary/10 space-y-4">
             {!isRecording ? (
               <button
                 onClick={handleRecord}
@@ -230,13 +241,13 @@ export default function RecordingPanel({
             )}
 
             {recordingBlob && !isRecording && (
-              <p className="text-sm font-medium text-white flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-white inline-block" />
+              <p className="text-sm font-medium text-primary flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary inline-block" />
                 Recording captured and ready for analysis
               </p>
             )}
 
-            <p className="text-[11px] text-blue-50/85 leading-relaxed">
+            <p className="text-[11px] text-text-secondary leading-relaxed">
               Camera data and audio streams are used to understand stress-related emotional patterns.
               Lighting, background noise, and resolution may influence confidence.
             </p>
