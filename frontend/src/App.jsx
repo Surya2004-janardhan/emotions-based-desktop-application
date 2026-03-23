@@ -84,9 +84,11 @@ export default function App() {
     try {
       stopDaemon();
       setPausedForMusic(true);
-      logInfo('app', 'auto monitoring paused for music playback (tryPlayNext)');
+      logInfo("app", "auto monitoring paused for music playback (tryPlayNext)");
     } catch (err) {
-      logError('app', 'failed to pause daemon before playback', { error: err?.message });
+      logError("app", "failed to pause daemon before playback", {
+        error: err?.message,
+      });
     }
 
     musicPlayingRef.current = true;
@@ -191,18 +193,22 @@ export default function App() {
             const meme = lastDaemonResult?.memes?.[0] || null;
             if (meme) {
               memeTimeoutRef.current = setTimeout(() => {
-                  try {
-                    ipc.invoke('notify-shift', {
-                      emotion: musicNowPlaying?.emotion || 'music',
-                      autoPlay: false,
-                      musicPath: musicNowPlaying?.musicPath || null,
-                      meme,
-                      memeOnly: true,
-                    });
-                  } catch (e) { /* ignore */ }
+                try {
+                  ipc.invoke("notify-shift", {
+                    emotion: musicNowPlaying?.emotion || "music",
+                    autoPlay: false,
+                    musicPath: musicNowPlaying?.musicPath || null,
+                    meme,
+                    memeOnly: true,
+                  });
+                } catch (e) {
+                  /* ignore */
+                }
               }, 20000); // show meme-only notification after 20s
             }
-          } catch (e) { /* ignore scheduling errors */ }
+          } catch (e) {
+            /* ignore scheduling errors */
+          }
         } catch (err) {
           // ignore
         }
@@ -252,9 +258,11 @@ export default function App() {
           try {
             stopDaemon();
             setPausedForMusic(true);
-            logInfo('app', 'daemon paused in response to notification Play');
+            logInfo("app", "daemon paused in response to notification Play");
           } catch (err) {
-            logError('app', 'failed to pause daemon on notification Play', { error: err?.message });
+            logError("app", "failed to pause daemon on notification Play", {
+              error: err?.message,
+            });
           }
 
           // Clear any scheduled meme notification
@@ -263,12 +271,17 @@ export default function App() {
               clearTimeout(memeTimeoutRef.current);
               memeTimeoutRef.current = null;
             }
-          } catch (e) { /* ignore */ }
+          } catch (e) {
+            /* ignore */
+          }
 
           // Ensure playback can start: clear stale flag, queue track, and attempt immediate play
           musicPlayingRef.current = false;
           musicQueueRef.current.push({ emotion, musicPath, at: Date.now() });
-          logInfo("app", "user approved playback from notification", { emotion, musicPath });
+          logInfo("app", "user approved playback from notification", {
+            emotion,
+            musicPath,
+          });
 
           tryPlayNext();
           try {
@@ -276,9 +289,13 @@ export default function App() {
             if (a && a.paused && a.src) {
               a.play().catch(() => {});
             }
-          } catch (e) { /* ignore */ }
+          } catch (e) {
+            /* ignore */
+          }
         } else {
-          logInfo("app", "user declined playback from notification", { emotion });
+          logInfo("app", "user declined playback from notification", {
+            emotion,
+          });
         }
       } catch (err) {
         logError("app", "notification-action handler error", {

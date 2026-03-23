@@ -20,7 +20,7 @@ app.commandLine.appendSwitch("autoplay-policy", "no-user-gesture-required");
 
 // Ensure Windows toast notifications support actions by providing an AppUserModelID
 try {
-  app.setAppUserModelId('com.emotionai.app');
+  app.setAppUserModelId("com.emotionai.app");
 } catch (e) {
   // ignore if not supported
 }
@@ -378,26 +378,30 @@ function setupIPC() {
   // Native OS Notification
   ipcMain.handle("notify-shift", (_e, payload) => {
     const { emotion, autoPlay, musicPath, meme } = payload || {};
-    mainLog("notify", "notify-shift received", { emotion, autoPlay, musicPath });
+    mainLog("notify", "notify-shift received", {
+      emotion,
+      autoPlay,
+      musicPath,
+    });
     const supported = Notification.isSupported();
     mainLog("notify", "notification capability checked", { supported });
     if (!supported) return { ok: false, error: "Notification not supported" };
 
     // Emoji map for titles
     const EMOJI_MAP = {
-      happy: '😊',
-      neutral: '😐',
-      sad: '😔',
-      angry: '😡',
-      fearful: '😨',
-      disgust: '🤢',
+      happy: "😊",
+      neutral: "😐",
+      sad: "😔",
+      angry: "😡",
+      fearful: "😨",
+      disgust: "🤢",
     };
-    const emoji = EMOJI_MAP[emotion] || '🎭';
+    const emoji = EMOJI_MAP[emotion] || "🎭";
 
     const options = {
       title: `${emoji} EmotionAI - Emotional Shift`,
       silent: false,
-      urgency: 'normal',
+      urgency: "normal",
     };
     options.body = autoPlay
       ? `Detected shift to ${emotion}. Playing your mapped playlist now.`
@@ -408,12 +412,15 @@ function setupIPC() {
       try {
         const m = meme;
         options.title = `${emoji} Meme Break`;
-        options.body = `${m.caption || ''}\n\n${m.reason || ''}`.trim();
+        options.body = `${m.caption || ""}\n\n${m.reason || ""}`.trim();
         if (m.imagePath && fs.existsSync(m.imagePath)) {
           try {
             options.icon = nativeImage.createFromPath(m.imagePath);
           } catch (e) {
-            mainError('notify', 'failed to load meme image', { error: e.message, path: m.imagePath });
+            mainError("notify", "failed to load meme image", {
+              error: e.message,
+              path: m.imagePath,
+            });
           }
         }
       } catch (e) {
@@ -541,13 +548,11 @@ function createWindow() {
           { error: e.message },
         );
         if (fs.existsSync(indexPath)) {
-          mainWindow
-            .loadFile(indexPath)
-            .catch((err) =>
-              mainError("window", "dist fallback failed", {
-                error: err.message,
-              }),
-            );
+          mainWindow.loadFile(indexPath).catch((err) =>
+            mainError("window", "dist fallback failed", {
+              error: err.message,
+            }),
+          );
         }
       });
   } else if (fs.existsSync(indexPath)) {
@@ -624,7 +629,11 @@ function createTray() {
 app.whenReady().then(async () => {
   // Required for Windows native toast notifications to appear in Action Center
   const APP_ID = "EmotionAI";
-  try { app.setAppUserModelId(APP_ID); } catch (e) { /* ignore */ }
+  try {
+    app.setAppUserModelId(APP_ID);
+  } catch (e) {
+    /* ignore */
+  }
 
   initPaths(); // Must be first; sets up file paths
 
@@ -639,26 +648,32 @@ app.whenReady().then(async () => {
   );
 
   // Ensure a Start Menu shortcut exists on Windows so toasts show as app toasts
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     try {
-      const shortcutPath = path.join(app.getPath('startMenu'), 'Programs', 'EmotionAI.lnk');
+      const shortcutPath = path.join(
+        app.getPath("startMenu"),
+        "Programs",
+        "EmotionAI.lnk",
+      );
       if (!fs.existsSync(shortcutPath)) {
         const options = {
           target: process.execPath,
-          args: '',
-          description: 'EmotionAI',
+          args: "",
+          description: "EmotionAI",
           appUserModelId: APP_ID,
         };
         // create shortcut; writeShortcutLink returns boolean
         try {
-          shell.writeShortcutLink(shortcutPath, 'create', options);
-          mainLog('notify', 'startmenu shortcut created', { shortcutPath });
+          shell.writeShortcutLink(shortcutPath, "create", options);
+          mainLog("notify", "startmenu shortcut created", { shortcutPath });
         } catch (err) {
-          mainError('notify', 'failed to create shortcut', { error: err.message });
+          mainError("notify", "failed to create shortcut", {
+            error: err.message,
+          });
         }
       }
     } catch (err) {
-      mainError('notify', 'ensure shortcut failed', { error: err.message });
+      mainError("notify", "ensure shortcut failed", { error: err.message });
     }
   }
 });
