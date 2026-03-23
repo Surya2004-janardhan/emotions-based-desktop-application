@@ -276,7 +276,12 @@ export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
           // Policy:
           // - Immediate notify for these emotions.
           // - Require N consecutive runs for slower-to-act emotions.
-          const IMMEDIATE_EMOTIONS = new Set(["happy", "sad", "angry", "fearful"]);
+          const IMMEDIATE_EMOTIONS = new Set([
+            "happy",
+            "sad",
+            "angry",
+            "fearful",
+          ]);
           const DELAYED_EMOTIONS = new Set(["neutral", "disgust"]);
 
           let shouldNotify = false;
