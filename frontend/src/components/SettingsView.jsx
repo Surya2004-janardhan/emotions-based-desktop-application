@@ -17,6 +17,7 @@ const ipc =
 
 export default function SettingsView({ settings, onSave }) {
   const [saveStatus, setSaveStatus] = useState({});
+  const [savedFlag, setSavedFlag] = useState(false);
   const fileInputRefs = useRef({});
 
   const set = async (patch) => {
@@ -184,12 +185,13 @@ export default function SettingsView({ settings, onSave }) {
           />
           <button
             onClick={async () => {
-              // Save is handled by onSave via set()
               await onSave({ groqApiKey: settings.groqApiKey || "" });
+              setSavedFlag(true);
+              setTimeout(() => setSavedFlag(false), 1800);
             }}
-            className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:opacity-90"
+            className={`px-4 py-2 rounded-lg text-white text-sm font-bold ${savedFlag ? "bg-primary/60 opacity-70" : "bg-primary hover:opacity-90"}`}
           >
-            Save
+            {savedFlag ? "Saved" : "Save"}
           </button>
           <button
             onClick={async () => {

@@ -457,6 +457,68 @@ export default function App() {
     }
   }, []);
 
+  const uploadInputRef = useRef(null);
+
+  const handleUploadTestVideo = useCallback(
+    async (file) => {
+      if (!file) return;
+      setTestNotifyBusy(true);
+      setTestNotifyStatus("");
+      logInfo("app", "upload test video requested");
+      try {
+        const form = new FormData();
+        form.append("video", file, file.name);
+        // include user's API key if available
+        try {
+          if (settings?.groqApiKey) form.append("api_key", settings.groqApiKey);
+        } catch (e) {}
+        const { default: axios } = await import("axios");
+        const res = await axios.post("/process", form, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        const result = res.data;
+        // Save to local results via main process
+        try {
+          if (ipc) await ipc.invoke("save-result", result);
+        } catch (e) {
+          /* ignore */
+        }
+        setLastDaemonResult(result);
+
+        // Mimic shift behavior: if autoPlay enabled and mapping exists, queue/play
+        const emotion = result?.fused_emotion;
+        const musicPath = settings?.musicMappings?.[emotion];
+        const autoPlay = settings?.notifyPermission === "auto";
+        if (!autoPlay) {
+          // Ask via native notification
+          try {
+            if (ipc) {
+              await ipc.invoke("notify-shift", {
+                emotion,
+                autoPlay: false,
+                musicPath,
+                meme: result?.memes?.[0] || null,
+              });
+            }
+          } catch (e) {}
+        } else {
+          if (musicPath) {
+            musicQueueRef.current.push({ emotion, musicPath, at: Date.now() });
+            tryPlayNext();
+          }
+        }
+
+        setTestNotifyStatus("Upload processed and saved.");
+      } catch (error) {
+        setTestNotifyStatus(error?.message || "Upload failed.");
+        logError("app", "upload test failed", { error: error?.message });
+      } finally {
+        setTestNotifyBusy(false);
+      }
+    },
+    [settings],
+  );
+
   const daemonLabel =
     daemonStatus === "recording"
       ? "Recording..."
@@ -765,6 +827,25 @@ export default function App() {
                   className="ml-3 inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-secondary text-white text-sm font-bold cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
                 >
                   Send Meme Test
+                </button>
+                <input
+                  ref={uploadInputRef}
+                  type="file"
+                  accept="video/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleUploadTestVideo(f);
+                    e.target.value = "";
+                  }}
+                />
+
+                <button
+                  onClick={() => uploadInputRef.current?.click()}
+                  disabled={testNotifyBusy}
+                  className="ml-3 inline-flex items-center gap-2 px-4 py-3 rounded-xl bg-emerald-600 text-white text-sm font-bold cursor-pointer hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  Upload Test Video
                 </button>
 
                 <p className="text-sm text-text-secondary leading-relaxed">

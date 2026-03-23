@@ -231,7 +231,7 @@ def extract_mfcc(audio_path):
         print(f"Failed to extract MFCC: {e}")
         return None
 
-def generate_llm_content(fused_emotion, reasoning, audio_temporal, video_temporal):
+def generate_llm_content(fused_emotion, reasoning, audio_temporal, video_temporal, api_key=None):
     """Generate personalized stress-support content using Groq LLM."""
     prompt = f"""
 You are helping a laptop-based employee understand stress patterns using emotion analysis over time.
@@ -296,8 +296,10 @@ Keep the tone warm, practical, and not clinical.
 Return ONLY the JSON object.
 """
     try:
+        # Prefer per-request API key if provided, otherwise fallback to env var
+        use_key = api_key or GROQ_API_KEY
         headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Authorization": f"Bearer {use_key}",
             "Content-Type": "application/json"
         }
         data = {
@@ -327,7 +329,7 @@ Return ONLY the JSON object.
                     if not llm_dict.get(key):
                         llm_dict[key] = fallback.get(key)
                 
-                return llm_dict
+                    return llm_dict
             except Exception as e:
                 print(f"LLM JSON failure: {e}")
                 return generate_fallback_content(fused_emotion)
@@ -782,11 +784,13 @@ def process():
         update_job(job_id, progress=90, status="Generating AI Response")
 
         # AI LAYER
+        api_key = request.form.get('api_key') or None
         llm_content = generate_llm_content(
             timeline_dominant_emotion,
             cognitive_reasoning,
             audio_emotions_temporal,
-            video_emotions_temporal
+            video_emotions_temporal,
+            api_key=api_key,
         )
 
         # Build probability arrays for smooth temporal charts
@@ -1029,10 +1033,10 @@ def analyze_history():
         Start immediately.
         """
         
-        headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        # Support per-request API key from client
+        api_key = data.get('api_key') if isinstance(data, dict) else None
+        use_key = api_key or GROQ_API_KEY
+        headers = {"Authorization": f"Bearer {use_key}", "Content-Type": "application/json"}
         payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": [{"role": "user", "content": prompt}],
@@ -1150,7 +1154,9 @@ How to behave:
 
         messages.append({"role": "user", "content": user_message})
 
-        headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
+        api_key = data.get('api_key') if isinstance(data, dict) else None
+        use_key = api_key or GROQ_API_KEY
+        headers = {"Authorization": f"Bearer {use_key}", "Content-Type": "application/json"}
         payload = {
             "model": "llama-3.3-70b-versatile",
             "messages": messages,

@@ -162,6 +162,13 @@ export default function useDaemon({ settings, onNewResult, onShiftDetected }) {
     });
     const formData = new FormData();
     formData.append("video", blob, "daemon_capture.webm");
+    // Forward per-user Groq API key if configured in settings
+    try {
+      const apiKey = settingsRef.current?.groqApiKey;
+      if (apiKey) formData.append("api_key", apiKey);
+    } catch (e) {
+      // ignore
+    }
     const res = await axios.post("/process", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
