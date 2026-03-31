@@ -7,6 +7,9 @@
   "build": {
     "appId": "com.emotionai.desktop",
     "productName": "EmotionAI",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
       "main.cjs",
@@ -15,10 +18,14 @@
       "package.json"
     ],
     "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ]
+      "target": ["nsis", "portable"],
+      "icon": "public/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true
     }
   },
   "scripts": {

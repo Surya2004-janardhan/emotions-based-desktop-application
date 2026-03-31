@@ -73,7 +73,7 @@ const RANGES = [
   { id: "all", label: "All Time" },
 ];
 
-export default function CalendarView() {
+export default function CalendarView({ groqApiKey = '' }) {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("week");
@@ -380,9 +380,10 @@ export default function CalendarView() {
     });
     try {
       const { data } = await axios.post(
-        "http://127.0.0.1:5000/analyze_history",
+        "/analyze_history",
         {
           history: filtered.slice(0, 500),
+          groq_api_key: groqApiKey,
         },
       );
       const result = {

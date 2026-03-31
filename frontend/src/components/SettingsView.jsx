@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Music, Upload, CheckCircle2, SlidersHorizontal } from "lucide-react";
+import { getBackendUrl } from "../hooks/useBackendUrl";
 
 const EMOTIONS = [
   "neutral",
@@ -32,10 +33,11 @@ export default function SettingsView({ settings, onSave }) {
       setSaveStatus((s) => ({ ...s, [emotion]: "saved" }));
       setTimeout(() => setSaveStatus((s) => ({ ...s, [emotion]: null })), 2500);
 
-      // Also sync to Flask backend
+      // Also sync to backend (HF Space in prod, localhost in dev)
       try {
         const { default: axios } = await import("axios");
-        await axios.post("http://127.0.0.1:5000/mappings", {
+        const backendUrl = await getBackendUrl();
+        await axios.post(`${backendUrl}/mappings`, {
           emotion,
           music_path: filePath,
         });

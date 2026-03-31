@@ -776,7 +776,9 @@ export default function App() {
             </div>
           )}
 
-          {currentTab === "calendar" && <CalendarView />}
+          {currentTab === "calendar" && (
+            <CalendarView groqApiKey={settings.groqApiKey} />
+          )}
 
           {currentTab === "settings" && (
             <SettingsView settings={settings} onSave={save} />
@@ -864,7 +866,12 @@ export default function App() {
 
           {currentTab === "assistant" && (
             <div className="h-[calc(100vh-8rem)] min-h-[560px] panel overflow-hidden">
-              <Chatbot results={activeInsight} isOpen mode="page" />
+              <Chatbot
+                results={activeInsight}
+                isOpen
+                mode="page"
+                groqApiKey={settings.groqApiKey}
+              />
             </div>
           )}
         </div>

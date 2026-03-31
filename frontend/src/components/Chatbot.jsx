@@ -8,7 +8,7 @@ const DEFAULT_MESSAGE = {
   content: 'I am your personal stress support assistant. I remember our conversation and can explain your emotional trends across your previous runs in simple English.'
 };
 
-export default function Chatbot({ results, isOpen = true, onClose, mode = 'overlay' }) {
+export default function Chatbot({ results, isOpen = true, onClose, mode = 'overlay', groqApiKey = '' }) {
   const [messages, setMessages] = useState([DEFAULT_MESSAGE]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -86,6 +86,7 @@ export default function Chatbot({ results, isOpen = true, onClose, mode = 'overl
         context: results || {},
         history,
         analysis_history: analysisHistory,
+        groq_api_key: groqApiKey,
       });
 
       setMessages((prev) => [...prev, { role: 'assistant', content: res.data.reply || 'No response.' }]);

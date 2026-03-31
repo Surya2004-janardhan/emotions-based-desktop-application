@@ -89,10 +89,18 @@ function saveSettings(data) {
   }
 }
 
-// ─── Flask Backend (on-demand) ────────────────────────────────
-const FLASK_URL = "http://127.0.0.1:5000";
-const BACKEND_CWD = path.join(__dirname, "..");
-const ROOT_CWD = BACKEND_CWD;
+// ─── Backend URL Config ──────────────────────────────────────
+// ⬇  Replace this with your actual HF Space URL after deploying
+const HF_SPACE_URL   = process.env.HF_SPACE_URL || 'https://YOUR-USERNAME-emotionai-backend.hf.space';
+const LOCAL_BACKEND  = 'http://127.0.0.1:5000';
+const BACKEND_CWD    = path.join(__dirname, '..');
+const ROOT_CWD       = BACKEND_CWD;
+
+function getBackendUrl() {
+  // In packaged production app → use HF Space
+  // In dev → use local Flask
+  return app.isPackaged ? HF_SPACE_URL : LOCAL_BACKEND;
+}
 
 function isBackendListening(port = 5000, host = "127.0.0.1", timeoutMs = 600) {
   return new Promise((resolve) => {
@@ -114,28 +122,44 @@ function isBackendListening(port = 5000, host = "127.0.0.1", timeoutMs = 600) {
   });
 }
 
-function resolvePythonCommand() {
-  if (process.env.PYTHON_BIN) return process.env.PYTHON_BIN;
-
-  const candidates = [
-    path.join(ROOT_CWD, ".venv", "Scripts", "python.exe"),
-    path.join(ROOT_CWD, "venv", "Scripts", "python.exe"),
-    path.join(ROOT_CWD, "myenv", "Scripts", "python.exe"),
-    "python",
-  ];
-
-  for (const candidate of candidates) {
-    if (candidate.includes(path.sep)) {
-      if (fs.existsSync(candidate)) return candidate;
-    } else {
-      return candidate;
+function resolveBackendCommand() {
+  // ── PRODUCTION (packaged Electron app) ──────────────────────────
+  // electron-builder puts extraFiles in process.resourcesPath
+  if (app.isPackaged) {
+    const bundledExe = path.join(process.resourcesPath, 'backend', 'backend.exe');
+    if (fs.existsSync(bundledExe)) {
+      mainLog('backend', 'using bundled backend.exe', { path: bundledExe });
+      return { cmd: bundledExe, args: [], cwd: path.dirname(bundledExe) };
     }
   }
 
-  return "python";
+  // ── DEVELOPMENT fallback: python app.py ─────────────────────────
+  if (process.env.PYTHON_BIN) {
+    return { cmd: process.env.PYTHON_BIN, args: ['app.py'], cwd: BACKEND_CWD };
+  }
+  const candidates = [
+    path.join(ROOT_CWD, '.venv', 'Scripts', 'python.exe'),
+    path.join(ROOT_CWD, 'venv', 'Scripts', 'python.exe'),
+    path.join(ROOT_CWD, 'myenv', 'Scripts', 'python.exe'),
+    'python',
+  ];
+  for (const c of candidates) {
+    if (c.includes(path.sep)) {
+      if (fs.existsSync(c)) return { cmd: c, args: ['app.py'], cwd: BACKEND_CWD };
+    } else {
+      return { cmd: c, args: ['app.py'], cwd: BACKEND_CWD };
+    }
+  }
+  return { cmd: 'python', args: ['app.py'], cwd: BACKEND_CWD };
 }
 
 async function startBackend() {
+  if (app.isPackaged) {
+    mainLog("backend", "packaged production: skipping local backend spawn");
+    pythonReady = true;
+    return Promise.resolve();
+  }
+
   if (pythonProcess && !pythonProcess.killed) {
     mainLog("backend", "already running");
     return Promise.resolve();
@@ -151,13 +175,14 @@ async function startBackend() {
   }
 
   return new Promise((resolve, reject) => {
-    mainLog("backend", "spawning flask process");
+    mainLog('backend', 'spawning backend process');
     pythonReady = false;
     pythonReadyCallbacks = [];
 
-    const pythonCmd = resolvePythonCommand();
-    mainLog("backend", "python command resolved", { pythonCmd });
-    pythonProcess = spawn(pythonCmd, ["app.py"], { cwd: BACKEND_CWD });
+    const { cmd, args, cwd } = resolveBackendCommand();
+    mainLog('backend', 'backend command resolved', { cmd, args, cwd });
+    pythonProcess = spawn(cmd, args, { cwd });
+
 
     const readyTimer = setTimeout(() => {
       // Assume ready after 8 seconds even if we miss the stdout signal
@@ -256,6 +281,9 @@ function setupIPC() {
 
   // Settings persistence
   ipcMain.handle("load-settings", () => loadSettings());
+
+  // Tell the renderer which backend URL to use
+  ipcMain.handle("get-backend-url", () => getBackendUrl());
 
   ipcMain.handle("save-settings", (_e, data) => {
     const ok = saveSettings(data);
