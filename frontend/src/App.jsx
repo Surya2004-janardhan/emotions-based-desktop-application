@@ -496,8 +496,7 @@ export default function App() {
         try {
           if (settings?.groqApiKey) form.append("api_key", settings.groqApiKey);
         } catch (e) {}
-        const { default: axios } = await import("axios");
-        const res = await axios.post("/process", form, {
+        const res = await axios.post("process", form, {
           headers: { "Content-Type": "multipart/form-data" },
         });
         const result = res.data;

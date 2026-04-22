@@ -141,10 +141,12 @@ function resolveBackendCommand() {
 
   // ── DEVELOPMENT fallback: python app.py ─────────────────────────
   // Use local backend_env if it exists in the root
-  const localEnvPython = path.join(ROOT_CWD, 'backend_env', 'Scripts', 'python.exe');
-  if (fs.existsSync(localEnvPython)) {
-    return { cmd: localEnvPython, args: ['app.py'], cwd: BACKEND_CWD };
-  }
+  const candidates = [
+    path.join(ROOT_CWD, "myenv", "Scripts", "python.exe"),
+    path.join(ROOT_CWD, ".venv", "Scripts", "python.exe"),
+    path.join(ROOT_CWD, "venv", "Scripts", "python.exe"),
+    "python",
+  ];
   for (const c of candidates) {
     if (c.includes(path.sep)) {
       if (fs.existsSync(c)) return { cmd: c, args: ['app.py'], cwd: BACKEND_CWD };
@@ -466,7 +468,8 @@ function setupIPC() {
     }
 
     // When autoPlay is disabled (ask mode), include action buttons for user choice
-    if (!autoPlay) {
+    // BUT only if this is NOT a meme-only notification
+    if (!autoPlay && !(payload && payload.memeOnly)) {
       options.actions = [
         { type: "button", text: "Play" },
         { type: "button", text: "No" },
