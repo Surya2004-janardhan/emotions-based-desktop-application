@@ -1,0 +1,33 @@
+# Python 3.10.14 compatible — all versions pinned for reproducible HF Space builds
+# Uses tensorflow-cpu (no GPU needed on HF free tier, much smaller wheel ~200 MB vs 600 MB)
+
+# Core ML
+numpy==1.26.4
+tensorflow-cpu==2.18.0
+
+# Audio
+librosa==0.10.1
+soundfile==0.12.1
+audioread==3.0.1
+resampy==0.4.3
+
+# Video
+opencv-python-headless==4.8.0.76   # headless = no display, smaller than full cv2
+
+# Audio extraction
+ffmpeg-python==0.2.0
+pydub==0.25.1
+
+# Web
+flask==3.0.3
+flask-cors==4.0.1
+gradio>=5.0.0
+tensorflow-cpu==2.18.0
+keras==3.7.0
+requests==2.31.0
+
+# AI
+groq==0.4.1
+
+# Utils
+scikit-learn==1.4.2
