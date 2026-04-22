@@ -157,32 +157,32 @@ def estimate_stress_state(fused_emotion, emotional_stability, transition_rate):
 def build_fallback_memes(fused_emotion):
     meme_map = {
         'happy': [
-            {'template': 'Success Kid', 'caption': 'When your meetings end on time and your coffee is still hot.', 'reason': 'Keeps the mood light and reinforces a positive work streak.'},
-            {'template': 'Leonardo Cheers', 'caption': 'POV: You finished the sprint and nobody added surprise scope.', 'reason': 'Celebrates healthy momentum without making the advice feel heavy.'},
+            {'template': 'Success Kid', 'caption': 'Meeting ended early. 🥳', 'reason': 'Reinforces positive momentum.'},
+            {'template': 'Leonardo Cheers', 'caption': 'POV: Your code works first try. 🥂', 'reason': 'Celebrates productivity gems.'},
         ],
         'sad': [
-            {'template': 'This Is Fine', 'caption': 'When the inbox grows faster than your energy, but you are still trying.', 'reason': 'Uses gentle humor to reduce emotional pressure during low phases.'},
-            {'template': 'Grumpy Cat', 'caption': 'Me pretending I am okay with one more “quick” call at 6 PM.', 'reason': 'Helps the user feel seen instead of judged.'},
+            {'template': 'This Is Fine', 'caption': 'Inbox is 99+, but I am zen. 🧘', 'reason': 'Reduces pressure with humor.'},
+            {'template': 'Grumpy Cat', 'caption': 'Another meeting invite? No. 😾', 'reason': 'Relatable workplace venting.'},
         ],
         'angry': [
-            {'template': 'Distracted Boyfriend', 'caption': 'Me choosing deep breaths instead of replying instantly to that message.', 'reason': 'Reframes irritation into self-control with a familiar meme format.'},
-            {'template': 'Woman Yelling at Cat', 'caption': 'My stress talking vs my actual to-do list.', 'reason': 'Turns escalation into perspective and release.'},
+            {'template': 'Distracted Boyfriend', 'caption': 'Me looking at "Deep Work" vs Slack. 😒', 'reason': 'Reframes irritation into focus.'},
+            {'template': 'Woman Yelling at Cat', 'caption': 'My stress vs my actual to-do list. 😹', 'reason': 'Gives perspective through humor.'},
         ],
         'fearful': [
-            {'template': 'Hide the Pain Harold', 'caption': 'When deadlines start staring back and you open another tab anyway.', 'reason': 'Softens anxiety with relatable workplace humor.'},
-            {'template': 'Panik/Kalm', 'caption': 'Panik: too much work. Kalm: one task at a time.', 'reason': 'Supports grounding through simple contrast.'},
+            {'template': 'Hide the Pain Harold', 'caption': 'When the deadline is Monday. 😬', 'reason': 'Softens anxiety with relatability.'},
+            {'template': 'Panik/Kalm', 'caption': 'Panik: Bug found. Kalm: It is on staging. 😌', 'reason': 'Supports grounding via contrast.'},
         ],
         'disgust': [
-            {'template': 'Nope Octopus', 'caption': 'When your brain rejects the whole workflow and asks for a reset.', 'reason': 'Acknowledges overload and boundary fatigue.'},
-            {'template': 'Side Eye Puppet', 'caption': 'That look when another “urgent” task appears with no context.', 'reason': 'Lets the user laugh at workplace friction instead of absorbing it.'},
+            {'template': 'Nope Octopus', 'caption': 'Me at "Quick Huddle" invites. 🐙', 'reason': 'Acknowledges boundary fatigue.'},
+            {'template': 'Side Eye Puppet', 'caption': 'That "As per my last email" energy. 🙄', 'reason': 'Laughs at workplace friction.'},
         ],
         'surprised': [
-            {'template': 'Surprised Pikachu', 'caption': 'When the “small fix” turns into a full afternoon.', 'reason': 'Turns unexpected workload spikes into something playful.'},
-            {'template': 'Wait, What?', 'caption': 'My face when the calendar says free but the reality says otherwise.', 'reason': 'Matches sudden change in the emotional pattern.'},
+            {'template': 'Surprised Pikachu', 'caption': 'My face when the "5 min fix" takes 4 hours. 😲', 'reason': 'Plays with unexpected shifts.'},
+            {'template': 'Wait, What?', 'caption': 'Actual footage of me re-reading the specs. 🧐', 'reason': 'Matches cognitive novelty.'},
         ],
         'neutral': [
-            {'template': 'Drake Hotline Bling', 'caption': 'Ignoring chaos, choosing a steady pace.', 'reason': 'Supports calm and sustainable work rhythm.'},
-            {'template': 'Office Jim Look', 'caption': 'When you survive the day by staying quietly balanced.', 'reason': 'Keeps neutral states engaging instead of flat.'},
+            {'template': 'Drake Hotline Bling', 'caption': 'Chaos? No. Quiet rhythm? Yes. 🌊', 'reason': 'Supports calm sustainable work.'},
+            {'template': 'Office Jim Look', 'caption': 'Surviving the day with quiet grace. ⌨️', 'reason': 'Keeps neutral states engaging.'},
         ],
     }
     return meme_map.get(fused_emotion, meme_map['neutral'])
@@ -290,7 +290,7 @@ You MUST return a valid JSON object with the following structure:
   "memes": [
     {{
       "template": "Meme Template Name",
-      "caption": "A light, office-friendly meme caption based on the user's current stress or emotion pattern.",
+      "caption": "A light, office-themed meme caption based on user's pattern. You MUST include EXACTLY ONE EMOJI and keep it as a SHORT PUNCHY LINE.",
       "reason": "Why this meme suits the user right now."
     }}
   ]

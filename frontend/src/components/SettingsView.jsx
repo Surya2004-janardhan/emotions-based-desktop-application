@@ -102,8 +102,7 @@ export default function SettingsView({ settings, onSave }) {
             onChange={(e) => set({ intervalMinutes: Number(e.target.value) })}
             className="px-3 py-2 rounded-lg bg-surface-raised border border-border-strong text-sm font-bold text-text-primary outline-none cursor-pointer"
           >
-            <option value={1 / 3}>Every 20 seconds</option>
-            <option value={2}>Every 2 minutes</option>
+            <option value={6}>Every 6 minutes</option>
             <option value={10}>Every 10 minutes</option>
             <option value={15}>Every 15 minutes</option>
             <option value={30}>Every 30 minutes</option>
@@ -131,8 +130,6 @@ export default function SettingsView({ settings, onSave }) {
             }
             className="px-3 py-2 rounded-lg bg-surface-raised border border-border-strong text-sm font-bold text-text-primary outline-none cursor-pointer"
           >
-            <option value={1 / 6}>10 seconds</option>
-            <option value={1}>1 minute</option>
             <option value={2}>2 minutes </option>
             <option value={5}>5 minutes</option>
             <option value={6}>6 minutes</option>

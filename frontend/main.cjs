@@ -449,7 +449,7 @@ function setupIPC() {
       try {
         const m = meme;
         options.title = `${emoji} Meme Break`;
-        options.body = `${m.caption || ""}\n\n${m.reason || ""}`.trim();
+        options.body = `${m.caption || ""}`;
         if (m.imagePath && fs.existsSync(m.imagePath)) {
           try {
             options.icon = nativeImage.createFromPath(m.imagePath);
